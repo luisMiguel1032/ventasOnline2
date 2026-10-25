@@ -12,10 +12,12 @@ su propia base de datos y su propio contrato en `docs/`.
   - JWT HS256 + endpoint `/api/auth/me`
   - Flyway creando `tenants`, `users` y `customers`
   - datos demo y CORS para el frontend
-- [x] `gateway` en el puerto **8080** (proxy `/api/auth`, `/api/catalog`, ...)
-- [ ] `catalog-service` con base propia: los `GET /api/catalog/...` ya
-  funcionan, pero **todavía leen de `mastec_saas`**; falta aislarlo en
-  `arbol_venta_catalog`
+- [x] `gateway` en el puerto **8080** (proxy `/api/auth`, `/api/products`, `/api/catalog`, ...)
+- [x] `catalog-service` aislado en su base propia `arbol_venta_catalog`
+  - Flyway creando `categories`, `brands`, `products` y `product_images`
+  - `GET /api/products` y `GET /api/products/{id}` públicos
+  - `POST /api/products` solo para ADMIN
+  - seed de productos demo para desarrollo
 - [ ] `web` (Next.js)
 - [ ] Demás servicios: esqueletos con health/security (semanas 3-4)
 
@@ -36,16 +38,18 @@ No hace falta instalar Maven: se usa el Gradle Wrapper (`gradlew`).
 
 ### Opción A — PostgreSQL local (la de esta máquina)
 
-Ya hay un PostgreSQL 18 corriendo en `localhost:5432`. El `auth-service`
-usa una base **exclusiva** llamada `arbol_venta_auth`:
+Ya hay un PostgreSQL 18 corriendo en `localhost:5432`. Cada servicio usa una
+base **exclusiva**. Para el estado actual hacen falta `arbol_venta_auth` y
+`arbol_venta_catalog`:
 
 ```powershell
 $env:PGPASSWORD='123'
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -h localhost -U postgres -c "CREATE DATABASE arbol_venta_auth;"
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -h localhost -U postgres -c "CREATE DATABASE arbol_venta_catalog;"
 ```
 
-Si la base ya existe, no ejecutes el comando otra vez. Las tablas las crea
-Flyway automáticamente al arrancar el servicio.
+Si una base ya existe, no ejecutes su comando otra vez. Las tablas las crea
+Flyway automáticamente al arrancar cada servicio.
 
 ### Opción B — Docker
 
@@ -94,6 +98,40 @@ Invoke-RestMethod http://localhost:8101/actuator/health
 
 Swagger UI: <http://localhost:8101/swagger-ui.html>
 
+## Arrancar `catalog-service` y `gateway`
+
+En dos terminales distintas (con `auth-service` ya arriba):
+
+```powershell
+.\gradlew.bat :services:catalog-service:bootRun
+```
+
+```powershell
+.\gradlew.bat :services:gateway:bootRun
+```
+
+O con los jars:
+
+```powershell
+java -jar services\catalog-service\build\libs\catalog-service.jar
+java -jar services\gateway\build\libs\gateway.jar
+```
+
+Comprobar salud:
+
+```powershell
+Invoke-RestMethod http://localhost:8103/actuator/health
+Invoke-RestMethod http://localhost:8080/actuator/health
+```
+
+El frontend siempre llama al gateway. Ejemplo de listado de productos:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/products?size=5"
+```
+
+Contrato del catálogo: [`docs/catalog-service.md`](docs/catalog-service.md).
+
 ## Credenciales demo (solo desarrollo)
 
 | Tipo | Usuario | Contraseña |
@@ -111,6 +149,11 @@ Se crean con `V2__seed_dev.sql`. **Cámbialas antes de desplegar.**
 | POST | `/api/auth/customer/login` | pública |
 | POST | `/api/auth/admin/login` | pública |
 | GET | `/api/auth/me` | Bearer JWT |
+| GET | `/api/products` | pública |
+| GET | `/api/products/{id}` | pública |
+| POST | `/api/products` | Bearer JWT de ADMIN |
+| GET | `/api/catalog/categories` | pública |
+| GET | `/api/catalog/brands` | pública |
 
 Ejemplo rápido:
 
@@ -125,21 +168,40 @@ Invoke-RestMethod http://localhost:8101/api/auth/me `
 
 Contrato completo: [`docs/auth-service.md`](docs/auth-service.md).
 
+Ejemplo de creación de producto (solo admin, a través del gateway):
+
+```powershell
+$login = Invoke-RestMethod http://localhost:8080/api/auth/admin/login `
+  -Method Post -ContentType 'application/json' `
+  -Body (@{ login='admin'; password='12345678' } | ConvertTo-Json)
+
+Invoke-RestMethod http://localhost:8080/api/products `
+  -Method Post -ContentType 'application/json' `
+  -Headers @{ Authorization = "Bearer $($login.accessToken)" } `
+  -Body (@{
+    name='Producto de prueba'; description='Creado desde PowerShell'
+    price=19.99; stock=5
+    categoryId='aaaaaaaa-0000-4000-8000-000000000001'
+    brandId='bbbbbbbb-0000-4000-8000-000000000001'
+  } | ConvertTo-Json)
+```
+
 ## Estructura
 
 ```
 amazon-clone/
 ├── docker-compose.yml
 ├── docs/
-│   └── auth-service.md
+│   ├── auth-service.md
+│   └── catalog-service.md
 ├── infra/
 │   └── docker/postgres/init.sql
 ├── libs/
 │   └── common/              # errores, JWT, paginación, BaseEntity
 ├── services/
 │   ├── auth-service/        # 8101  (listo)
-│   ├── catalog-service/    # 8103  (lee mastec_saas; falta aislar)
-│   ├── gateway/            # 8080  (proxy)
+│   ├── catalog-service/     # 8103  (listo, base propia arbol_venta_catalog)
+│   ├── gateway/             # 8080  (proxy)
 │   └── ...
 └── web/                     # frontend (pendiente)
 ```
@@ -155,8 +217,6 @@ amazon-clone/
 
 ## Siguiente paso
 
-Aislar `catalog-service` en su propia base `arbol_venta_catalog`:
-migraciones Flyway para `categories`, `brands`, `products` y
-`product_images`, copiar los productos demo que hoy están en `mastec_saas`
-y agregar `POST /api/catalog/products` (solo ADMIN). Después, el frontend
-`web` con login, registro, home y detalle de producto.
+Construir el frontend `web` (Next.js): login, registro de cliente, home con
+lista de productos y detalle de producto, siempre llamando al gateway en
+`http://localhost:8080/api/...`. Después, el flujo de compra (carrito y pedido).

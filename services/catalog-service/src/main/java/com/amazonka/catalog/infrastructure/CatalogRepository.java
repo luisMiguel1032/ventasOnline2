@@ -1,6 +1,7 @@
 package com.amazonka.catalog.infrastructure;
 
 import java.math.BigDecimal;
+import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,12 +14,13 @@ import org.springframework.stereotype.Repository;
 import com.amazonka.catalog.api.dto.BrandDto;
 import com.amazonka.catalog.api.dto.CategoryDto;
 import com.amazonka.catalog.api.dto.ProductDetail;
+import com.amazonka.catalog.api.dto.ProductRequest;
 import com.amazonka.catalog.api.dto.ProductSummary;
 
 /**
- * Lecturas del catálogo sobre la vista v_shop_products (producto + categoría
- * + marca + unidad + precio + stock). No escribe nada: el alta/edición de
- * productos la hará el panel admin en una fase posterior.
+ * Acceso a las tablas del catálogo. Las lecturas usan la vista
+ * v_shop_products (producto + categoría + marca); las escrituras las
+ * realiza el panel admin sobre products.
  */
 @Repository
 public class CatalogRepository {
@@ -175,6 +177,68 @@ public class CatalogRepository {
                 rs.getObject("id", UUID.class),
                 rs.getString("name")
         ));
+    }
+
+    public boolean existsBySlug(UUID tenantId, String slug) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("slug", slug);
+
+        Boolean exists = jdbc.queryForObject("""
+                select exists(
+                    select 1 from products
+                    where tenant_id = :tenantId and slug = :slug
+                )
+                """, params, Boolean.class);
+
+        return Boolean.TRUE.equals(exists);
+    }
+
+    public void insertProduct(
+            UUID tenantId,
+            UUID id,
+            String slug,
+            String code,
+            String itemCode,
+            ProductRequest request) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("tenantId", tenantId)
+                .addValue("categoryId", request.categoryId(), Types.OTHER)
+                .addValue("brandId", request.brandId(), Types.OTHER)
+                .addValue("code", code)
+                .addValue("itemCode", itemCode)
+                .addValue("name", request.name().trim())
+                .addValue("description", request.description())
+                .addValue("slug", slug)
+                .addValue("image", request.image())
+                .addValue("features", request.features())
+                .addValue("type", normalizeOrDefault(request.type(), "physical"))
+                .addValue("price", request.price())
+                .addValue("stock", request.stock() == null
+                        ? BigDecimal.ZERO
+                        : request.stock())
+                .addValue("unitName", normalizeOrDefault(request.unitName(), "unidad"));
+
+        jdbc.update("""
+                insert into products (
+                    id, tenant_id, category_id, brand_id, code, item_code,
+                    name, description, slug, image, features, type, price,
+                    stock, rating_avg, rating_count, unit_name, status
+                ) values (
+                    :id, :tenantId, :categoryId, :brandId, :code, :itemCode,
+                    :name, :description, :slug, :image, :features, :type,
+                    :price, :stock, 0, 0, :unitName, 1
+                )
+                """, params);
+    }
+
+    private static String normalizeOrDefault(String value, String defaultValue) {
+        return value == null || value.isBlank()
+                ? defaultValue
+                : value.trim();
     }
 
     private ProductDetail withImages(ProductDetail product, UUID tenantId) {

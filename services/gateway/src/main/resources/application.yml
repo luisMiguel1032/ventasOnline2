@@ -26,6 +26,9 @@ gateway:
     - id: catalog
       prefix: /api/catalog
       uri: http://localhost:8103
+    - id: products
+      prefix: /api/products
+      uri: http://localhost:8103
     - id: search
       prefix: /api/search
       uri: http://localhost:8104
