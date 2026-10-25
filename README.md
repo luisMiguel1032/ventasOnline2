@@ -3,7 +3,7 @@
 Sistema de venta por microservicios. Cada servicio tiene su propia carpeta,
 su propia base de datos y su propio contrato en `docs/`.
 
-## Estado actual (semana 1)
+## Estado actual
 
 - [x] Monorepo Gradle con `services/` y `libs/common`
 - [x] `auth-service` funcional en el puerto **8101**
@@ -18,7 +18,12 @@ su propia base de datos y su propio contrato en `docs/`.
   - `GET /api/products` y `GET /api/products/{id}` públicos
   - `POST /api/products` solo para ADMIN
   - seed de productos demo para desarrollo
-- [ ] `web` (Next.js)
+- [x] `web` (Next.js) en el puerto **3000**
+  - home con catálogo, búsqueda, categorías, orden y paginación
+  - detalle de producto
+  - login y registro de clientes contra el gateway
+  - sesión JWT persistida en el navegador
+- [ ] Fase 3: carrito, pedidos y checkout
 - [ ] Demás servicios: esqueletos con health/security (semanas 3-4)
 
 > El proyecto existente usa **Gradle + Java 25 + Spring Boot 4.1.1**, no
@@ -28,7 +33,7 @@ su propia base de datos y su propio contrato en `docs/`.
 ## Requisitos
 
 - Java 25 (el toolchain del proyecto)
-- Node 20+ (para el frontend, más adelante)
+- Node 20+ (frontend Next.js)
 - PostgreSQL 18 local **o** Docker Desktop
 - Git
 
@@ -132,6 +137,38 @@ Invoke-RestMethod "http://localhost:8080/api/products?size=5"
 
 Contrato del catálogo: [`docs/catalog-service.md`](docs/catalog-service.md).
 
+## Arrancar el frontend
+
+Con `gateway`, `auth-service` y `catalog-service` ya arriba:
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+Abrir <http://localhost:3000>. El frontend llama siempre al gateway en
+`http://localhost:8080/api`; no usa los puertos internos de los servicios.
+
+Si el gateway está en otra URL, definir la variable antes de arrancar:
+
+```powershell
+$env:NEXT_PUBLIC_API_URL='http://localhost:8080/api'
+npm run dev
+```
+
+También se puede copiar `web/.env.local.example` a `web/.env.local`.
+
+Build de producción:
+
+```powershell
+npm run build
+npm run start
+```
+
+Contrato y arquitectura del frontend:
+[`docs/web-frontend.md`](docs/web-frontend.md).
+
 ## Credenciales demo (solo desarrollo)
 
 | Tipo | Usuario | Contraseña |
@@ -193,7 +230,8 @@ amazon-clone/
 ├── docker-compose.yml
 ├── docs/
 │   ├── auth-service.md
-│   └── catalog-service.md
+│   ├── catalog-service.md
+│   └── web-frontend.md
 ├── infra/
 │   └── docker/postgres/init.sql
 ├── libs/
@@ -203,7 +241,7 @@ amazon-clone/
 │   ├── catalog-service/     # 8103  (listo, base propia arbol_venta_catalog)
 │   ├── gateway/             # 8080  (proxy)
 │   └── ...
-└── web/                     # frontend (pendiente)
+└── web/                     # 3000  (Next.js, Fase 2)
 ```
 
 ## Reglas del proyecto
@@ -217,6 +255,9 @@ amazon-clone/
 
 ## Siguiente paso
 
-Construir el frontend `web` (Next.js): login, registro de cliente, home con
-lista de productos y detalle de producto, siempre llamando al gateway en
-`http://localhost:8080/api/...`. Después, el flujo de compra (carrito y pedido).
+Fase 3: construir el flujo de compra. Empezar por `cart-service` (carrito por
+cliente autenticado) y `order-service` (crear pedido desde el carrito), con sus
+bases `arbol_venta_cart` y `arbol_venta_order`, contratos en `docs/` y Flyway.
+Después integrar en el frontend el carrito, el checkout y “mis pedidos”.
+
+Pagos, inventario y panel de administración quedan para la siguiente etapa.
