@@ -4,7 +4,7 @@ Servicio de identidad del e-commerce. Es el **único** que emite JWT.
 Los demás servicios solo validan el token con la misma clave.
 
 - Puerto: `8101`
-- Base de datos: `amazonka_auth` (exclusiva de este servicio)
+- Base de datos: `arbol_venta_auth` (exclusiva de este servicio)
 - Prefijo: `/api/auth`
 - Formato de error: `ApiError` (ver abajo)
 
@@ -149,7 +149,7 @@ Códigos estables para el frontend: `DATOS_INVALIDOS`, `NO_AUTORIZADO`,
 |---|---|
 | `DB_HOST` | `localhost` |
 | `DB_PORT` | `5432` |
-| `DB_NAME` | `amazonka_auth` |
+| `DB_NAME` | `arbol_venta_auth` |
 | `DB_USERNAME` | `postgres` |
 | `DB_PASSWORD` | `123` |
 | `JWT_SECRET` | valor de ejemplo (cámbialo) |
@@ -161,6 +161,6 @@ Códigos estables para el frontend: `DATOS_INVALIDOS`, `NO_AUTORIZADO`,
 
 - **No** se reutiliza la base `mastec_saas` del otro proyecto. Compartir esa
   base mezclaría dos aplicaciones y rompería la regla de una base por servicio.
-  Se usa el mismo servidor PostgreSQL local, pero con la base `amazonka_auth`.
+  Se usa el mismo servidor PostgreSQL local, pero con la base `arbol_venta_auth`.
 - `auth-service` no conoce productos, carrito ni órdenes. Si otro servicio
   necesita identidad, valida el JWT o llama a `/api/auth/me`.

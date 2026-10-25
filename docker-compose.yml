@@ -3,7 +3,7 @@
 # Docker es OPCIONAL. En esta máquina ya hay un PostgreSQL 18 local en el
 # puerto 5432, así que el auth-service usa ese servidor y una base propia:
 #
-#     amazonka_auth
+#     arbol_venta_auth
 #
 # Este compose sirve para levantar todo desde cero en otra máquina. Usa el
 # puerto 5433 para no chocar con el PostgreSQL local.

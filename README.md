@@ -15,7 +15,7 @@ su propia base de datos y su propio contrato en `docs/`.
 - [x] `gateway` en el puerto **8080** (proxy `/api/auth`, `/api/catalog`, ...)
 - [ ] `catalog-service` con base propia: los `GET /api/catalog/...` ya
   funcionan, pero **todavía leen de `mastec_saas`**; falta aislarlo en
-  `amazonka_catalog`
+  `arbol_venta_catalog`
 - [ ] `web` (Next.js)
 - [ ] Demás servicios: esqueletos con health/security (semanas 3-4)
 
@@ -37,11 +37,11 @@ No hace falta instalar Maven: se usa el Gradle Wrapper (`gradlew`).
 ### Opción A — PostgreSQL local (la de esta máquina)
 
 Ya hay un PostgreSQL 18 corriendo en `localhost:5432`. El `auth-service`
-usa una base **exclusiva** llamada `amazonka_auth`:
+usa una base **exclusiva** llamada `arbol_venta_auth`:
 
 ```powershell
 $env:PGPASSWORD='123'
-& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -h localhost -U postgres -c "CREATE DATABASE amazonka_auth;"
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -h localhost -U postgres -c "CREATE DATABASE arbol_venta_auth;"
 ```
 
 Si la base ya existe, no ejecutes el comando otra vez. Las tablas las crea
@@ -71,7 +71,7 @@ de usuarios de prueba. Mezclar las dos aplicaciones rompería:
 - la claridad de los datos (clientes del POS no son clientes del e-commerce).
 
 Se puede usar el **mismo servidor** PostgreSQL, pero con bases separadas:
-`amazonka_auth`, `amazonka_catalog`, `amazonka_cart`, etc.
+`arbol_venta_auth`, `arbol_venta_catalog`, `arbol_venta_cart`, etc.
 
 ## Arrancar `auth-service`
 
@@ -155,7 +155,7 @@ amazon-clone/
 
 ## Siguiente paso
 
-Aislar `catalog-service` en su propia base `amazonka_catalog`:
+Aislar `catalog-service` en su propia base `arbol_venta_catalog`:
 migraciones Flyway para `categories`, `brands`, `products` y
 `product_images`, copiar los productos demo que hoy están en `mastec_saas`
 y agregar `POST /api/catalog/products` (solo ADMIN). Después, el frontend

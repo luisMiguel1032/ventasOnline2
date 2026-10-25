@@ -1,6 +1,6 @@
 -- =====================================================================
 -- auth-service: esquema inicial
--- Base de datos propia: amazonka_auth
+-- Base de datos propia: arbol_venta_auth
 --
 -- Solo viven aquí las tablas de identidad:
 --   tenants   -> tienda/empresa (tenant)
