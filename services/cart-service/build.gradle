@@ -1,0 +1,13 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation project(':libs:common')
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'cart-service.jar'
+}

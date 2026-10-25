@@ -1,0 +1,35 @@
+server:
+  port: 8104
+
+spring:
+  application:
+    name: search-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mastec_saas}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+  flyway:
+    enabled: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:amazonka-super-secret-key-change-me-32-bytes-min}
+    issuer: amazonka
+  default-tenant-id: ${DEFAULT_TENANT_ID:11111111-1111-4111-8111-111111111111}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

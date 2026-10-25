@@ -1,0 +1,51 @@
+# Infraestructura local (semana 1)
+#
+# Docker es OPCIONAL. En esta máquina ya hay un PostgreSQL 18 local en el
+# puerto 5432, así que el auth-service usa ese servidor y una base propia:
+#
+#     amazonka_auth
+#
+# Este compose sirve para levantar todo desde cero en otra máquina. Usa el
+# puerto 5433 para no chocar con el PostgreSQL local.
+#
+#   docker compose up -d postgres
+#   # luego, en la app:
+#   DB_PORT=5433 DB_USERNAME=admin DB_PASSWORD=admin123 \
+#     ./gradlew :services:auth-service:bootRun
+#
+# Redis y RabbitMQ se usarán recién en las semanas 3 y 4.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: amazonka-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: amazonka-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: amazonka-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  pgdata:

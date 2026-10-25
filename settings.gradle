@@ -1,0 +1,17 @@
+rootProject.name = 'amazon-clone'
+
+include 'libs:common'
+
+include 'services:gateway'
+include 'services:auth-service'
+include 'services:user-service'
+include 'services:catalog-service'
+include 'services:search-service'
+include 'services:cart-service'
+include 'services:order-service'
+include 'services:payment-service'
+include 'services:inventory-service'
+include 'services:shipping-service'
+include 'services:review-service'
+include 'services:recommendation-service'
+include 'services:notification-service'
