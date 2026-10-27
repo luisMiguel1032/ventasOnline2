@@ -1,4 +1,4 @@
-# Amazonka — clon de Amazon (monorepo)
+# Árbol de Venta (monorepo)
 
 Sistema de venta por microservicios. Cada servicio tiene su propia carpeta,
 su propia base de datos y su propio contrato en `docs/`.

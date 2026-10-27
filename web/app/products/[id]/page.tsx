@@ -57,10 +57,10 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!product) return;
 
-    document.title = `${product.name} — Amazonka`;
+    document.title = `${product.name} — Árbol de Venta`;
 
     return () => {
-      document.title = 'Amazonka — tu tienda online';
+      document.title = 'Árbol de Venta — tu tienda online';
     };
   }, [product]);
 

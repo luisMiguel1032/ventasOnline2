@@ -102,7 +102,7 @@ export default function HomePage() {
   return (
     <>
       <section className="hero">
-        <p className="eyebrow">Bienvenido a Amazonka</p>
+        <p className="eyebrow">Bienvenido a Árbol de Venta</p>
         <h1>Todo lo que buscas, en un solo lugar.</h1>
         <p className="hero-copy">
           Explora nuestro catálogo, revisa el detalle de cada producto y crea tu

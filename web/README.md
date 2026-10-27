@@ -1,4 +1,4 @@
-# Amazonka — frontend
+# Árbol de Venta - frontend
 
 Aplicación Next.js de la tienda. Consume únicamente el gateway en
 `http://localhost:8080/api`.

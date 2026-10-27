@@ -84,7 +84,7 @@ El backend devuelve un JWT con esta forma plana:
 ```
 
 `AuthProvider` lo transforma en una `Session` agregando `expiresAt` y lo guarda
-en `localStorage` con la clave **`amazonka.session`**.
+en `localStorage` con la clave **`arboldeventa.session`**.
 
 - Al iniciar, se lee la sesión y se descarta si ya venció.
 - `login()` y `register()` guardan la sesión y notifican a los componentes.

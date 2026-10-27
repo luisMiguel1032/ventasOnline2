@@ -24,7 +24,7 @@ export function Navbar() {
     <header className="navbar">
       <div className="navbar-inner">
         <Link href="/" className="brand" onClick={closeMenu}>
-          amazonka<span className="brand-dot">.</span>
+          Árbol<span className="brand-dot"> de Venta</span>
         </Link>
 
         <button

@@ -30,7 +30,7 @@ Claims emitidos:
 
 ```json
 {
-  "iss": "amazonka",
+  "iss": "arboldeventa",
   "sub": "uuid-del-usuario-o-cliente",
   "tenantId": "uuid-de-la-tienda",
   "accountType": "ADMIN | CUSTOMER",

@@ -1,7 +1,7 @@
 import type { Session } from './types';
 
-export const SESSION_KEY = 'amazonka.session';
-export const SESSION_EVENT = 'amazonka:session';
+export const SESSION_KEY = 'arboldeventa.session';
+export const SESSION_EVENT = 'arboldeventa:session';
 
 export function readSession(): Session | null {
   if (typeof window === 'undefined') return null;

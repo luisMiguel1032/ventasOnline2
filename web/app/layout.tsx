@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Amazonka — tu tienda online',
+  title: 'Árbol de Venta — tu tienda online',
   description:
     'Catálogo de productos, login de clientes y detalle de producto. Proyecto académico de microservicios.',
 };
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Navbar />
           <main className="page">{children}</main>
           <footer className="footer">
-            <strong>amazonka</strong>
+            <strong>Árbol de Venta</strong>
             <span>Proyecto académico de microservicios</span>
             <span className="footer-muted">
               Productos y precios de demostración.
