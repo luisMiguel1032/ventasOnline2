@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import { AuthProvider } from '@/components/AuthProvider';
 import { Navbar } from '@/components/Navbar';
+import { Subnav } from '@/components/Subnav';
 
 import './globals.css';
 
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <AuthProvider>
           <Navbar />
+          <Subnav />
           <main className="page">{children}</main>
           <footer className="footer">
             <strong>Árbol de Venta</strong>
