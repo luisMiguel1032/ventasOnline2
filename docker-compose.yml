@@ -1,24 +1,23 @@
-# Infraestructura local (semana 1)
+# Infraestructura local (Árbol de Venta)
 #
 # Docker es OPCIONAL. En esta máquina ya hay un PostgreSQL 18 local en el
-# puerto 5432, así que el auth-service usa ese servidor y una base propia:
-#
-#     arbol_venta_auth
+# puerto 5432; cada servicio usa su propia base (arbol_venta_auth,
+# arbol_venta_catalog, etc.).
 #
 # Este compose sirve para levantar todo desde cero en otra máquina. Usa el
 # puerto 5433 para no chocar con el PostgreSQL local.
 #
 #   docker compose up -d postgres
-#   # luego, en la app:
-#   DB_PORT=5433 DB_USERNAME=admin DB_PASSWORD=admin123 \
-#     ./gradlew :services:auth-service:bootRun
+#   # luego, en la app (ej. auth-service):
+#   $env:DB_PORT='5433'; $env:DB_USERNAME='admin'; $env:DB_PASSWORD='admin123'
+#   .\gradlew :services:auth-service:bootRun
 #
-# Redis y RabbitMQ se usarán recién en las semanas 3 y 4.
+# Redis y RabbitMQ se usarán en las fases de carrito/pedidos y eventos.
 
 services:
   postgres:
     image: postgres:16
-    container_name: amazonka-postgres
+    container_name: arbol-venta-postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
@@ -36,13 +35,13 @@ services:
 
   redis:
     image: redis:7
-    container_name: amazonka-redis
+    container_name: arbol-venta-redis
     ports:
       - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: amazonka-rabbitmq
+    container_name: arbol-venta-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
