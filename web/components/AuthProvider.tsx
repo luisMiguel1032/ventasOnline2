@@ -10,19 +10,21 @@ import {
   type ReactNode,
 } from 'react';
 
-import { loginCustomer, registerCustomer } from '@/lib/api';
+import { loginAdmin, loginCustomer, registerCustomer } from '@/lib/api';
 import {
   SESSION_EVENT,
   clearSession,
   readSession,
   saveSession,
 } from '@/lib/session';
-import type { AuthResponse, RegisterInput, Session } from '@/lib/types';
+import type { AdminLoginInput, AuthResponse, RegisterInput, Session } from '@/lib/types';
 
 interface AuthContextValue {
   session: Session | null;
   ready: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<Session>;
+  loginAsAdmin: (input: AdminLoginInput) => Promise<Session>;
   register: (input: RegisterInput) => Promise<Session>;
   logout: () => void;
 }
@@ -63,6 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return nextSession;
   }, []);
 
+  const loginAsAdmin = useCallback(async (input: AdminLoginInput) => {
+    const auth = await loginAdmin(input);
+    const nextSession = toSession(auth);
+    saveSession(nextSession);
+    setSession(nextSession);
+    return nextSession;
+  }, []);
+
   const register = useCallback(async (input: RegisterInput) => {
     const auth = await registerCustomer(input);
     const nextSession = toSession(auth);
@@ -76,9 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
+  const isAdmin = session?.accountType === 'ADMIN';
+
   const value = useMemo<AuthContextValue>(
-    () => ({ session, ready, login, register, logout }),
-    [session, ready, login, register, logout],
+    () => ({ session, ready, isAdmin, login, loginAsAdmin, register, logout }),
+    [session, ready, isAdmin, login, loginAsAdmin, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

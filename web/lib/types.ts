@@ -67,3 +67,24 @@ export interface RegisterInput {
   password: string;
   phone?: string;
 }
+
+export interface AdminLoginInput {
+  login: string;
+  password: string;
+  tenantId?: string;
+}
+
+export interface ProductInput {
+  name: string;
+  description?: string;
+  price: number;
+  stock?: number;
+  categoryId?: string;
+  brandId?: string;
+  image?: string;
+  features?: string;
+  type?: string;
+  unitName?: string;
+  code?: string;
+  itemCode?: string;
+}

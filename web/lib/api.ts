@@ -1,9 +1,11 @@
 import type {
+  AdminLoginInput,
   AuthResponse,
   Brand,
   Category,
   PageResponse,
   ProductDetail,
+  ProductInput,
   ProductSummary,
   RegisterInput,
 } from './types';
@@ -158,6 +160,24 @@ export function registerCustomer(input: RegisterInput): Promise<AuthResponse> {
 
 export function getMe(token: string): Promise<Omit<AuthResponse, 'accessToken' | 'tokenType' | 'expiresIn'>> {
   return request('/auth/me', { token });
+}
+
+export function loginAdmin(input: AdminLoginInput): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/admin/login', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function createProduct(
+  token: string,
+  input: ProductInput,
+): Promise<ProductDetail> {
+  return request<ProductDetail>('/products', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(input),
+  });
 }
 
 export { API_URL };
