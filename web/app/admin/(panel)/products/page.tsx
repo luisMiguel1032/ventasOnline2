@@ -3,33 +3,53 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { ApiError, getProducts } from '@/lib/api';
+import { ApiError, deleteProduct, getProducts } from '@/lib/api';
+import { useAuth } from '@/components/AuthProvider';
 import { formatPrice, formatStock } from '@/lib/format';
 import type { PageResponse, ProductSummary } from '@/lib/types';
 
 export default function AdminProductsPage() {
+  const { session } = useAuth();
   const [data, setData] = useState<PageResponse<ProductSummary> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await getProducts({ page: 0, size: 20, sort: 'newest' });
+      setData(result);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cargar el catálogo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    getProducts({ page: 0, size: 20, sort: 'newest' })
-      .then((result) => {
-        if (active) setData(result);
-      })
-      .catch((err) => {
-        if (active)
-          setError(err instanceof ApiError ? err.message : 'No se pudo cargar el catálogo.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+    void load();
   }, []);
+
+  async function handleDelete(product: ProductSummary) {
+    if (!session?.accessToken) return;
+    const confirmed = window.confirm(
+      `¿Eliminar el producto "${product.name}"? Dejará de mostrarse en la tienda.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(product.id);
+    setError(null);
+    try {
+      await deleteProduct(session.accessToken, product.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo eliminar el producto.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="admin-shell">
@@ -81,9 +101,22 @@ export default function AdminProductsPage() {
                   <td>{formatPrice(p.price)}</td>
                   <td>{formatStock(p.stock)}</td>
                   <td>
-                    <Link href={`/products/${p.id}`} className="admin-link">
-                      Ver en tienda
-                    </Link>
+                    <div className="admin-row-actions">
+                      <Link href={`/admin/products/${p.id}`} className="admin-link">
+                        Editar
+                      </Link>
+                      <Link href={`/products/${p.id}`} className="admin-link">
+                        Ver
+                      </Link>
+                      <button
+                        type="button"
+                        className="admin-link admin-link--danger"
+                        onClick={() => void handleDelete(p)}
+                        disabled={deletingId === p.id}
+                      >
+                        {deletingId === p.id ? '…' : 'Eliminar'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

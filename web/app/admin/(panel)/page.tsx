@@ -38,6 +38,22 @@ export default function AdminDashboardPage() {
         </article>
 
         <article className="admin-card">
+          <h2>Ofertas</h2>
+          <p>
+            Crea ofertas relámpago, destacadas y del día con descuento
+            automático, temporizador y stock limitado.
+          </p>
+          <div className="admin-card-actions">
+            <Link href="/admin/deals" className="btn btn-primary">
+              Ver ofertas
+            </Link>
+            <Link href="/admin/deals/new" className="btn btn-ghost">
+              Crear oferta
+            </Link>
+          </div>
+        </article>
+
+        <article className="admin-card">
           <h2>Pedidos y usuarios</h2>
           <p>Módulos planificados para la siguiente fase (carrito, órdenes, gestión de usuarios).</p>
           <span className="admin-badge">Próximamente</span>

@@ -1,6 +1,7 @@
 package com.amazonka.catalog.api.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +24,15 @@ public record ProductDetail(
         UUID brandId,
         String brandName,
         String unitName,
-        List<String> images
+        List<String> images,
+        UUID dealId,
+        BigDecimal dealPrice,
+        BigDecimal dealDiscountPercent,
+        String dealType,
+        String dealTitle,
+        Instant dealEndsAt,
+        BigDecimal dealStockRemaining,
+        Integer dealStockPercent,
+        BigDecimal dealStockLimit
 ) {
 }

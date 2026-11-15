@@ -54,6 +54,23 @@ export function Navbar() {
             >
               Panel
             </Link>
+          ) : session ? (
+            <>
+              <Link
+                href="/cart"
+                onClick={closeMenu}
+                className={pathname === '/cart' ? 'nav-link active' : 'nav-link'}
+              >
+                Carrito
+              </Link>
+              <Link
+                href="/orders"
+                onClick={closeMenu}
+                className={pathname.startsWith('/orders') ? 'nav-link active' : 'nav-link'}
+              >
+                Mis pedidos
+              </Link>
+            </>
           ) : null}
 
           {!ready ? null : session ? (

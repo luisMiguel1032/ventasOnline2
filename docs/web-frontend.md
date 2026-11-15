@@ -5,7 +5,7 @@ propias**: solo consume el gateway y muestra la información que devuelven
 `auth-service` y `catalog-service`.
 
 - Carpeta: `web/`
-- URL de desarrollo: <http://localhost:3000>
+- URL de desarrollo: <http://localhost:3001>
 - API: `http://localhost:8080/api` (gateway)
 - Stack: Next.js 16 (App Router), React 19, TypeScript y CSS propio.
 - No usa Tailwind ni llama directamente a los puertos `8101` / `8103`.
@@ -16,7 +16,7 @@ propias**: solo consume el gateway y muestra la información que devuelven
 Navegador
    │
    ▼
-Next.js :3000  ──►  Gateway :8080  ──►  auth-service :8101
+Next.js :3001  ──►  Gateway :8080  ──►  auth-service :8101
                                    └──►  catalog-service :8103
 ```
 
@@ -29,19 +29,26 @@ el navegador. El frontend nunca conoce la URL interna de un microservicio.
 web/
 ├── app/
 │   ├── layout.tsx              # AuthProvider, Navbar, footer, metadata
-│   ├── page.tsx                # home: búsqueda, filtros, orden y paginación
-│   ├── products/[id]/page.tsx  # detalle de producto
+│   ├── page.tsx                # home: búsqueda, ofertas, filtros y paginación
+│   ├── deals/page.tsx          # ofertas con filtros y cuenta regresiva
+│   ├── products/[id]/page.tsx  # detalle de producto y precio de oferta
 │   ├── login/page.tsx          # login de cliente
 │   ├── register/page.tsx       # registro de cliente
+│   ├── admin/(panel)/          # panel de productos y ofertas (ADMIN)
 │   ├── not-found.tsx           # 404
 │   └── globals.css             # estilos (Amazon-like, responsive)
 ├── components/
 │   ├── AuthProvider.tsx        # sesión, login, registro y logout
 │   ├── Navbar.tsx              # navegación y estado de sesión
-│   └── ProductCard.tsx         # tarjeta de producto
+│   ├── Subnav.tsx              # accesos rápidos, incluye Ofertas del Día
+│   ├── ProductCard.tsx         # tarjeta de producto con oferta activa
+│   ├── DealCard.tsx            # tarjeta de oferta
+│   ├── DealCountdown.tsx       # temporizador de la oferta
+│   └── AdminDealForm.tsx       # formulario de creación/edición de ofertas
 ├── lib/
 │   ├── api.ts                  # cliente HTTP del gateway + ApiError
 │   ├── types.ts                # tipos del contrato
+│   ├── deals.ts                # etiquetas, descuento y cuenta regresiva
 │   ├── session.ts              # persistencia de la sesión
 │   └── format.ts               # precio, estrellas y stock
 ├── .env.local.example          # NEXT_PUBLIC_API_URL
@@ -56,6 +63,10 @@ web/
 |---|---|---|
 | Listar productos | `GET /api/products?q=&categoryId=&sort=&page=&size=` | No |
 | Ver producto | `GET /api/products/{id}` | No |
+| Listar ofertas | `GET /api/deals?type=&categoryId=&minDiscount=&sort=&page=&size=` | No |
+| Ver oferta | `GET /api/deals/{id}` | No |
+| Listar ofertas (admin) | `GET /api/deals/admin` | Bearer ADMIN |
+| Crear/editar/desactivar oferta | `POST/PUT/DELETE /api/deals` | Bearer ADMIN |
 | Listar categorías | `GET /api/catalog/categories` | No |
 | Listar marcas | `GET /api/catalog/brands` | No |
 | Login cliente | `POST /api/auth/customer/login` | No |
@@ -100,21 +111,48 @@ en `localStorage` con la clave **`arboldeventa.session`**.
 ### `/` — catálogo
 
 - Lista los productos en tarjetas con imagen, categoría, marca, rating, precio
-  y stock.
+  y stock. Si el producto tiene una oferta activa, muestra precio rebajado,
+  precio original tachado, tipo de oferta y cuenta regresiva.
 - Buscador por nombre.
 - Chips de categorías obtenidos desde el catálogo.
 - Orden por nombre, precio, rating y novedad.
 - Paginación de 12 productos.
+- Franjas de ofertas destacadas y relámpago sobre el catálogo.
 - Estados de carga (skeleton), error con reintento y catálogo vacío.
+
+### `/deals` — ofertas
+
+- Listado paginado de ofertas activas.
+- Filtros por tipo (`LIGHTNING`, `FEATURED`, `DAILY`), categoría, descuento
+  mínimo y orden (mayor descuento, terminan pronto, precio, novedad).
+- Cada tarjeta muestra precio de oferta, precio original, ahorro, temporizador
+  y barra de stock limitado.
+- Estado vacío cuando no hay ofertas con los filtros elegidos.
+
+### `/medical` — atención médica
+
+- Listado de productos de la categoría “Salud”.
+- Búsqueda, orden y paginación sobre el catálogo médico.
+- Tema visual propio (verde/teal) aplicado al cambiar de módulo.
 
 ### `/products/[id]` — detalle
 
 - Galería con imagen principal y miniaturas.
 - Rating, precio, stock y descripción.
+- Si hay oferta: precio rebajado, precio original tachado, tipo de oferta,
+  cuenta regresiva y progreso del stock limitado.
 - Características separadas por `;`, `|` o salto de línea.
 - Especificaciones: código, SKU, marca y tipo.
 - El botón **Agregar al carrito** está deshabilitado a propósito: el carrito
   pertenece a la Fase 3.
+
+### `/admin` — panel
+
+- Solo accesible con una cuenta `ADMIN`.
+- Listado y CRUD de productos.
+- Listado de ofertas con estado (activa, programada, terminada, agotada o
+  desactivada), edición y desactivación lógica.
+- Creación y edición de ofertas con vista previa del precio calculado.
 
 ### `/login` — login de cliente
 
@@ -141,7 +179,7 @@ npm install
 npm run dev
 ```
 
-Abrir <http://localhost:3000>.
+Abrir <http://localhost:3001>.
 
 Si el gateway está en otra URL:
 
@@ -197,6 +235,11 @@ desarrollo y deben eliminarse antes de un despliegue real.
 - `npm run typecheck` sin errores.
 - `npm run build` correcto con Next.js 16.4.3.
 - Home con 8 productos, 4 categorías y sin errores de consola.
+- Home con franjas de ofertas destacadas y relámpago.
+- `/deals` con 6 ofertas, filtros y temporizadores activos.
+- Detalle de oferta con precio rebajado, precio original, cuenta regresiva y
+  stock limitado (`Quedan 7 de 25`).
+- Panel de ofertas con estados, edición y desactivación.
 - Filtro “Electrónica” → 3 productos.
 - Búsqueda “smart” → 1 producto.
 - Detalle de producto con galería, 4 características y botón de carrito
@@ -211,4 +254,3 @@ desarrollo y deben eliminarse antes de un despliegue real.
 - Carrito y checkout.
 - Órdenes del cliente.
 - Reemplazar la sesión en `localStorage` por cookies seguras.
-- Panel de administración (fuera de la tienda pública).

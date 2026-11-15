@@ -2,7 +2,13 @@ import type {
   AdminLoginInput,
   AuthResponse,
   Brand,
+  CartResponse,
   Category,
+  CheckoutInput,
+  OrderResponse,
+  DealInput,
+  DealSummary,
+  DealType,
   PageResponse,
   ProductDetail,
   ProductInput,
@@ -178,6 +184,158 @@ export function createProduct(
     token,
     body: JSON.stringify(input),
   });
+}
+
+export function updateProduct(
+  token: string,
+  id: string,
+  input: ProductInput,
+): Promise<ProductDetail> {
+  return request<ProductDetail>(`/products/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteProduct(token: string, id: string): Promise<void> {
+  return request<void>(`/products/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+export interface DealQuery {
+  type?: DealType | '';
+  categoryId?: string;
+  brandId?: string;
+  minDiscount?: number;
+  sort?: string;
+  page?: number;
+  size?: number;
+}
+
+export function getDeals(
+  query: DealQuery = {},
+): Promise<PageResponse<DealSummary>> {
+  const params = new URLSearchParams();
+
+  if (query.type) params.set('type', query.type);
+  if (query.categoryId) params.set('categoryId', query.categoryId);
+  if (query.brandId) params.set('brandId', query.brandId);
+  if (query.minDiscount !== undefined) {
+    params.set('minDiscount', String(query.minDiscount));
+  }
+  if (query.sort) params.set('sort', query.sort);
+  params.set('page', String(query.page ?? 0));
+  params.set('size', String(query.size ?? 12));
+
+  const qs = params.toString();
+
+  return request<PageResponse<DealSummary>>(`/deals${qs ? `?${qs}` : ''}`);
+}
+
+export function getDeal(id: string): Promise<DealSummary> {
+  return request<DealSummary>(`/deals/${encodeURIComponent(id)}`);
+}
+
+export function getAdminDeals(
+  token: string,
+  page = 0,
+  size = 50,
+): Promise<PageResponse<DealSummary>> {
+  return request<PageResponse<DealSummary>>(
+    `/deals/admin?page=${page}&size=${size}`,
+    { token },
+  );
+}
+
+export function createDeal(
+  token: string,
+  input: DealInput,
+): Promise<DealSummary> {
+  return request<DealSummary>('/deals', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateDeal(
+  token: string,
+  id: string,
+  input: DealInput,
+): Promise<DealSummary> {
+  return request<DealSummary>(`/deals/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteDeal(token: string, id: string): Promise<void> {
+  return request<void>(`/deals/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+export function getCart(token: string): Promise<CartResponse> {
+  return request<CartResponse>('/cart', { token });
+}
+
+export function addCartItem(
+  token: string,
+  productId: string,
+  quantity: number,
+): Promise<CartResponse> {
+  return request<CartResponse>('/cart/items', {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ productId, quantity }),
+  });
+}
+
+export function updateCartItem(
+  token: string,
+  productId: string,
+  quantity: number,
+): Promise<CartResponse> {
+  return request<CartResponse>(`/cart/items/${encodeURIComponent(productId)}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify({ productId, quantity }),
+  });
+}
+
+export function removeCartItem(token: string, productId: string): Promise<CartResponse> {
+  return request<CartResponse>(`/cart/items/${encodeURIComponent(productId)}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
+export function clearCart(token: string): Promise<void> {
+  return request<void>('/cart', { method: 'DELETE', token });
+}
+
+export function checkout(
+  token: string,
+  input: CheckoutInput,
+): Promise<OrderResponse> {
+  return request<OrderResponse>('/orders', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export function getOrders(token: string): Promise<OrderResponse[]> {
+  return request<OrderResponse[]>('/orders', { token });
+}
+
+export function getOrder(token: string, id: string): Promise<OrderResponse> {
+  return request<OrderResponse>(`/orders/${encodeURIComponent(id)}`, { token });
 }
 
 export { API_URL };

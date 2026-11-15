@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import { AuthProvider } from '@/components/AuthProvider';
+import { ModuleTheme } from '@/components/ModuleTheme';
 import { Navbar } from '@/components/Navbar';
 import { Subnav } from '@/components/Subnav';
 
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
       <body>
+        <ModuleTheme />
         <AuthProvider>
           <Navbar />
           <Subnav />

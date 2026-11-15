@@ -1,6 +1,7 @@
 .gradle/
 build/
 *.log
+*.err
 .env
 .env.local
 node_modules/

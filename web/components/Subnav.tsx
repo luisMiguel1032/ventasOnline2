@@ -3,9 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import type { MouseEvent as ReactMouseEvent } from 'react';
+
 import { useAuth } from './AuthProvider';
 
-type SubnavItem = { label: string; href: string; icon?: string; soon?: boolean };
+type SubnavItem = {
+  label: string;
+  href: string;
+  icon?: string;
+  soon?: boolean;
+  onClick?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
+};
 
 export function Subnav() {
   const pathname = usePathname();
@@ -13,8 +21,20 @@ export function Subnav() {
 
   const items: SubnavItem[] = [
     { label: 'Todo', href: '/', icon: '☰' },
-    { label: 'Ofertas del Día', href: '/?sort=rating' },
-    { label: 'Categorías', href: '/' },
+    { label: 'Ofertas del Día', href: '/deals' },
+    {
+      label: 'Categorías',
+      href: '/#categorias',
+      onClick: (event) => {
+        if (pathname === '/') {
+          event.preventDefault();
+          document
+            .getElementById('categorias')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      },
+    },
+    { label: 'Atención médica', href: '/medical' },
     { label: 'Servicio al Cliente', href: '#', soon: true },
     { label: 'Mis Pedidos', href: '#', soon: true },
     { label: 'Listas', href: '#', soon: true },
@@ -49,7 +69,13 @@ export function Subnav() {
               key={item.label}
               href={item.href}
               className={className}
-              aria-current={pathname === item.href ? 'page' : undefined}
+              onClick={item.onClick}
+              aria-current={
+                pathname === item.href ||
+                (item.label === 'Categorías' && pathname === '/')
+                  ? 'page'
+                  : undefined
+              }
             >
               {item.icon ? <span aria-hidden="true">{item.icon} </span> : null}
               {item.label}

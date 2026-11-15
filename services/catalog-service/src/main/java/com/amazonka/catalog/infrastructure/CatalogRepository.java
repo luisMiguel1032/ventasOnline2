@@ -1,7 +1,12 @@
 package com.amazonka.catalog.infrastructure;
 
 import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,22 +18,36 @@ import org.springframework.stereotype.Repository;
 
 import com.amazonka.catalog.api.dto.BrandDto;
 import com.amazonka.catalog.api.dto.CategoryDto;
+import com.amazonka.catalog.api.dto.DealRequest;
+import com.amazonka.catalog.api.dto.DealSummary;
 import com.amazonka.catalog.api.dto.ProductDetail;
 import com.amazonka.catalog.api.dto.ProductRequest;
 import com.amazonka.catalog.api.dto.ProductSummary;
 
 /**
- * Acceso a las tablas del catálogo. Las lecturas usan la vista
- * v_shop_products (producto + categoría + marca); las escrituras las
- * realiza el panel admin sobre products.
+ * Acceso a las tablas del catálogo. Las lecturas usan las vistas
+ * v_shop_products y v_shop_deals; las escrituras las realiza el panel
+ * admin sobre products y product_deals.
  */
 @Repository
 public class CatalogRepository {
 
     private static final String SUMMARY_COLUMNS = """
             select id, name, slug, image, price, stock,
-                   rating_avg, rating_count, category_name, brand_name
+                   rating_avg, rating_count, category_name, brand_name,
+                   deal_id, deal_price, deal_discount_percent, deal_type,
+                   deal_title, deal_ends_at, deal_stock_remaining,
+                   deal_stock_percent, deal_stock_limit
             from v_shop_products
+            """;
+
+    private static final String DEAL_COLUMNS = """
+            select id, product_id, product_name, product_slug, image,
+                   category_name, brand_name, original_price, deal_price,
+                   discount_percent, deal_type, title, starts_at, ends_at,
+                   stock_limit, stock_sold, stock_remaining, stock_percent,
+                   product_stock, rating_avg, rating_count, status, is_active
+            from v_shop_deals
             """;
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -36,6 +55,8 @@ public class CatalogRepository {
     public CatalogRepository(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
+
+    // ------------------------------------------------------------ Products
 
     public List<ProductSummary> findProducts(
             UUID tenantId,
@@ -69,7 +90,16 @@ public class CatalogRepository {
                 rs.getBigDecimal("rating_avg"),
                 rs.getInt("rating_count"),
                 rs.getString("category_name"),
-                rs.getString("brand_name")
+                rs.getString("brand_name"),
+                rs.getObject("deal_id", UUID.class),
+                rs.getBigDecimal("deal_price"),
+                rs.getBigDecimal("deal_discount_percent"),
+                rs.getString("deal_type"),
+                rs.getString("deal_title"),
+                toInstant(rs, "deal_ends_at"),
+                rs.getBigDecimal("deal_stock_remaining"),
+                nullableInt(rs, "deal_stock_percent"),
+                rs.getBigDecimal("deal_stock_limit")
         ));
     }
 
@@ -102,7 +132,10 @@ public class CatalogRepository {
         List<ProductDetail> results = jdbc.query("""
                 select id, code, item_code, name, description, slug, image,
                        features, type, price, stock, rating_avg, rating_count,
-                       categorie_id, category_name, brand_id, brand_name, unit_name
+                       categorie_id, category_name, brand_id, brand_name, unit_name,
+                       deal_id, deal_price, deal_discount_percent, deal_type,
+                       deal_title, deal_ends_at, deal_stock_remaining,
+                       deal_stock_percent, deal_stock_limit
                 from v_shop_products
                 where tenant_id = :tenantId and id = :id
                 """, params, (rs, rowNum) -> new ProductDetail(
@@ -124,7 +157,16 @@ public class CatalogRepository {
                 rs.getObject("brand_id", UUID.class),
                 rs.getString("brand_name"),
                 rs.getString("unit_name"),
-                List.of()
+                List.of(),
+                rs.getObject("deal_id", UUID.class),
+                rs.getBigDecimal("deal_price"),
+                rs.getBigDecimal("deal_discount_percent"),
+                rs.getString("deal_type"),
+                rs.getString("deal_title"),
+                toInstant(rs, "deal_ends_at"),
+                rs.getBigDecimal("deal_stock_remaining"),
+                nullableInt(rs, "deal_stock_percent"),
+                rs.getBigDecimal("deal_stock_limit")
         ));
 
         return results.stream().findFirst()
@@ -235,6 +277,341 @@ public class CatalogRepository {
                 """, params);
     }
 
+    public boolean existsBySlugExcluding(UUID tenantId, String slug, UUID excludedId) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("slug", slug)
+                .addValue("excludedId", excludedId);
+
+        Boolean exists = jdbc.queryForObject("""
+                select exists(
+                    select 1 from products
+                    where tenant_id = :tenantId and slug = :slug and id <> :excludedId
+                )
+                """, params, Boolean.class);
+
+        return Boolean.TRUE.equals(exists);
+    }
+
+    public int updateProduct(
+            UUID tenantId,
+            UUID id,
+            String slug,
+            String code,
+            String itemCode,
+            ProductRequest request) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("tenantId", tenantId)
+                .addValue("categoryId", request.categoryId(), Types.OTHER)
+                .addValue("brandId", request.brandId(), Types.OTHER)
+                .addValue("code", code)
+                .addValue("itemCode", itemCode)
+                .addValue("name", request.name().trim())
+                .addValue("description", request.description())
+                .addValue("slug", slug)
+                .addValue("image", request.image())
+                .addValue("features", request.features())
+                .addValue("type", request.type() == null || request.type().isBlank()
+                        ? null
+                        : request.type().trim())
+                .addValue("price", request.price())
+                .addValue("stock", request.stock())
+                .addValue("unitName", request.unitName() == null || request.unitName().isBlank()
+                        ? null
+                        : request.unitName().trim());
+
+        return jdbc.update("""
+                update products set
+                    category_id = :categoryId,
+                    brand_id = :brandId,
+                    code = :code,
+                    item_code = :itemCode,
+                    name = :name,
+                    description = :description,
+                    slug = :slug,
+                    image = :image,
+                    features = :features,
+                    type = coalesce(:type, type),
+                    price = :price,
+                    stock = coalesce(:stock, stock),
+                    unit_name = coalesce(:unitName, unit_name),
+                    updated_at = now()
+                where tenant_id = :tenantId and id = :id and status = 1
+                """, params);
+    }
+
+    public int softDeleteProduct(UUID tenantId, UUID id) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("id", id);
+
+        return jdbc.update("""
+                update products
+                set status = 0, updated_at = now()
+                where tenant_id = :tenantId and id = :id and status = 1
+                """, params);
+    }
+
+    // --------------------------------------------------------------- Deals
+
+    public List<DealSummary> findDeals(
+            UUID tenantId,
+            String dealType,
+            UUID categoryId,
+            UUID brandId,
+            BigDecimal minDiscount,
+            String sort,
+            int limit,
+            int offset) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        String where = buildDealWhere(
+                tenantId, dealType, categoryId, brandId, minDiscount, true, params);
+
+        params.addValue("limit", limit);
+        params.addValue("offset", offset);
+
+        String sql = DEAL_COLUMNS
+                + where
+                + " order by " + resolveDealSort(sort)
+                + " limit :limit offset :offset";
+
+        return jdbc.query(sql, params, CatalogRepository::mapDeal);
+    }
+
+    public long countDeals(
+            UUID tenantId,
+            String dealType,
+            UUID categoryId,
+            UUID brandId,
+            BigDecimal minDiscount) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        String where = buildDealWhere(
+                tenantId, dealType, categoryId, brandId, minDiscount, true, params);
+
+        Long total = jdbc.queryForObject(
+                "select count(*) from v_shop_deals" + where,
+                params,
+                Long.class
+        );
+
+        return total == null ? 0L : total;
+    }
+
+    public List<DealSummary> findDealsForAdmin(
+            UUID tenantId,
+            int limit,
+            int offset) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("limit", limit)
+                .addValue("offset", offset);
+
+        return jdbc.query(DEAL_COLUMNS + """
+                 where tenant_id = :tenantId
+                 order by deal_created_at desc
+                 limit :limit offset :offset
+                """, params, CatalogRepository::mapDeal);
+    }
+
+    public long countDealsForAdmin(UUID tenantId) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId);
+
+        Long total = jdbc.queryForObject(
+                "select count(*) from v_shop_deals where tenant_id = :tenantId",
+                params,
+                Long.class
+        );
+
+        return total == null ? 0L : total;
+    }
+
+    public Optional<DealSummary> findDeal(UUID tenantId, UUID id) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("id", id);
+
+        return jdbc.query(
+                DEAL_COLUMNS + " where tenant_id = :tenantId and id = :id",
+                params,
+                CatalogRepository::mapDeal
+        ).stream().findFirst();
+    }
+
+    public boolean existsActiveDeal(UUID tenantId, UUID productId) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("productId", productId);
+
+        Boolean exists = jdbc.queryForObject("""
+                select exists(
+                    select 1 from product_deals
+                    where tenant_id = :tenantId
+                      and product_id = :productId
+                      and status = 1
+                )
+                """, params, Boolean.class);
+
+        return Boolean.TRUE.equals(exists);
+    }
+
+    public boolean productExists(UUID tenantId, UUID productId) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("productId", productId);
+
+        Boolean exists = jdbc.queryForObject("""
+                select exists(
+                    select 1 from products
+                    where tenant_id = :tenantId and id = :productId and status = 1
+                )
+                """, params, Boolean.class);
+
+        return Boolean.TRUE.equals(exists);
+    }
+
+    public void insertDeal(
+            UUID tenantId,
+            UUID id,
+            DealRequest request,
+            String dealType) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("tenantId", tenantId)
+                .addValue("productId", request.productId())
+                .addValue("title", request.title())
+                .addValue("dealType", dealType)
+                .addValue("discountPercent", request.discountPercent())
+                .addValue("stockLimit", request.stockLimit(), Types.NUMERIC)
+                .addValue("stockSold", request.stockSold(), Types.NUMERIC)
+                .addValue("startsAt",
+                        OffsetDateTime.ofInstant(request.startsAt(), ZoneOffset.UTC),
+                        Types.TIMESTAMP_WITH_TIMEZONE)
+                .addValue("endsAt",
+                        OffsetDateTime.ofInstant(request.endsAt(), ZoneOffset.UTC),
+                        Types.TIMESTAMP_WITH_TIMEZONE)
+                .addValue("status", request.status() == null ? 1 : request.status());
+
+        jdbc.update("""
+                insert into product_deals (
+                    id, tenant_id, product_id, title, deal_type,
+                    discount_percent, stock_limit, stock_sold,
+                    starts_at, ends_at, status
+                ) values (
+                    :id, :tenantId, :productId, :title, :dealType,
+                    :discountPercent,
+                    coalesce(:stockLimit, (
+                        select stock from products
+                        where tenant_id = :tenantId and id = :productId
+                    )),
+                    coalesce(:stockSold, 0),
+                    :startsAt, :endsAt, :status
+                )
+                """, params);
+    }
+
+    public int updateDeal(
+            UUID tenantId,
+            UUID id,
+            DealRequest request,
+            String dealType) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("id", id)
+                .addValue("tenantId", tenantId)
+                .addValue("productId", request.productId())
+                .addValue("title", request.title())
+                .addValue("dealType", dealType)
+                .addValue("discountPercent", request.discountPercent())
+                .addValue("stockLimit", request.stockLimit(), Types.NUMERIC)
+                .addValue("stockSold", request.stockSold(), Types.NUMERIC)
+                .addValue("startsAt",
+                        OffsetDateTime.ofInstant(request.startsAt(), ZoneOffset.UTC),
+                        Types.TIMESTAMP_WITH_TIMEZONE)
+                .addValue("endsAt",
+                        OffsetDateTime.ofInstant(request.endsAt(), ZoneOffset.UTC),
+                        Types.TIMESTAMP_WITH_TIMEZONE)
+                .addValue("status", request.status());
+
+        return jdbc.update("""
+                update product_deals set
+                    product_id = :productId,
+                    title = :title,
+                    deal_type = :dealType,
+                    discount_percent = :discountPercent,
+                    stock_limit = coalesce(:stockLimit, stock_limit),
+                    stock_sold = coalesce(:stockSold, stock_sold),
+                    starts_at = :startsAt,
+                    ends_at = :endsAt,
+                    status = coalesce(:status, status),
+                    updated_at = now()
+                where tenant_id = :tenantId and id = :id
+                """, params);
+    }
+
+    public int softDeleteDeal(UUID tenantId, UUID id) {
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("tenantId", tenantId)
+                .addValue("id", id);
+
+        return jdbc.update("""
+                update product_deals
+                set status = 0, updated_at = now()
+                where tenant_id = :tenantId and id = :id
+                """, params);
+    }
+
+    // ------------------------------------------------------------- Helpers
+
+    private static DealSummary mapDeal(ResultSet rs, int rowNum) throws SQLException {
+        return new DealSummary(
+                rs.getObject("id", UUID.class),
+                rs.getObject("product_id", UUID.class),
+                rs.getString("product_name"),
+                rs.getString("product_slug"),
+                rs.getString("image"),
+                rs.getString("category_name"),
+                rs.getString("brand_name"),
+                rs.getBigDecimal("original_price"),
+                rs.getBigDecimal("deal_price"),
+                rs.getBigDecimal("discount_percent"),
+                rs.getString("deal_type"),
+                rs.getString("title"),
+                toInstant(rs, "starts_at"),
+                toInstant(rs, "ends_at"),
+                rs.getBigDecimal("stock_limit"),
+                rs.getBigDecimal("stock_sold"),
+                rs.getBigDecimal("stock_remaining"),
+                nullableInt(rs, "stock_percent"),
+                rs.getBigDecimal("product_stock"),
+                rs.getBigDecimal("rating_avg"),
+                rs.getInt("rating_count"),
+                nullableInt(rs, "status"),
+                rs.getBoolean("is_active")
+        );
+    }
+
+    private static Instant toInstant(ResultSet rs, String column) throws SQLException {
+        OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
+        return value == null ? null : value.toInstant();
+    }
+
+    private static Integer nullableInt(ResultSet rs, String column) throws SQLException {
+        int value = rs.getInt(column);
+        return rs.wasNull() ? null : value;
+    }
+
     private static String normalizeOrDefault(String value, String defaultValue) {
         return value == null || value.isBlank()
                 ? defaultValue
@@ -263,7 +640,16 @@ public class CatalogRepository {
                 product.brandId(),
                 product.brandName(),
                 product.unitName(),
-                images
+                images,
+                product.dealId(),
+                product.dealPrice(),
+                product.dealDiscountPercent(),
+                product.dealType(),
+                product.dealTitle(),
+                product.dealEndsAt(),
+                product.dealStockRemaining(),
+                product.dealStockPercent(),
+                product.dealStockLimit()
         );
     }
 
@@ -307,6 +693,45 @@ public class CatalogRepository {
         return where.toString();
     }
 
+    private static String buildDealWhere(
+            UUID tenantId,
+            String dealType,
+            UUID categoryId,
+            UUID brandId,
+            BigDecimal minDiscount,
+            boolean onlyActive,
+            MapSqlParameterSource params) {
+
+        StringBuilder where = new StringBuilder(" where tenant_id = :tenantId");
+        params.addValue("tenantId", tenantId);
+
+        if (onlyActive) {
+            where.append(" and status = 1 and is_active = true");
+        }
+
+        if (dealType != null && !dealType.isBlank()) {
+            where.append(" and deal_type = :dealType");
+            params.addValue("dealType", dealType.trim().toUpperCase());
+        }
+
+        if (categoryId != null) {
+            where.append(" and categorie_id = :categoryId");
+            params.addValue("categoryId", categoryId);
+        }
+
+        if (brandId != null) {
+            where.append(" and brand_id = :brandId");
+            params.addValue("brandId", brandId);
+        }
+
+        if (minDiscount != null) {
+            where.append(" and discount_percent >= :minDiscount");
+            params.addValue("minDiscount", minDiscount);
+        }
+
+        return where.toString();
+    }
+
     private static String resolveSort(String sort) {
         return switch (sort == null ? "" : sort) {
             case "price_asc" -> "price asc";
@@ -314,6 +739,16 @@ public class CatalogRepository {
             case "rating" -> "rating_avg desc nulls last, rating_count desc";
             case "newest" -> "created_at desc";
             default -> "name asc";
+        };
+    }
+
+    private static String resolveDealSort(String sort) {
+        return switch (sort == null ? "" : sort) {
+            case "ending_soon" -> "ends_at asc";
+            case "price_asc" -> "deal_price asc";
+            case "price_desc" -> "deal_price desc";
+            case "newest" -> "deal_created_at desc";
+            default -> "discount_percent desc, ends_at asc";
         };
     }
 }

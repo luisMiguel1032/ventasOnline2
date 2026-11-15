@@ -12,17 +12,21 @@ su propia base de datos y su propio contrato en `docs/`.
   - JWT HS256 + endpoint `/api/auth/me`
   - Flyway creando `tenants`, `users` y `customers`
   - datos demo y CORS para el frontend
-- [x] `gateway` en el puerto **8080** (proxy `/api/auth`, `/api/products`, `/api/catalog`, ...)
+- [x] `gateway` en el puerto **8080** (proxy `/api/auth`, `/api/products`, `/api/catalog`, `/api/deals`, ...)
 - [x] `catalog-service` aislado en su base propia `arbol_venta_catalog`
-  - Flyway creando `categories`, `brands`, `products` y `product_images`
-  - `GET /api/products` y `GET /api/products/{id}` públicos
-  - `POST /api/products` solo para ADMIN
-  - seed de productos demo para desarrollo
-- [x] `web` (Next.js) en el puerto **3000**
+  - Flyway creando `categories`, `brands`, `products`, `product_images` y `product_deals`
+  - `GET /api/products` y `GET /api/products/{id}` públicos, con datos de oferta cuando aplica
+  - CRUD de productos y ofertas solo para ADMIN
+  - ofertas `DAILY`, `LIGHTNING` y `FEATURED` con descuento automático, temporizador y stock limitado
+  - seed de productos y ofertas demo para desarrollo
+- [x] `web` (Next.js) en el puerto **3001**
   - home con catálogo, búsqueda, categorías, orden y paginación
-  - detalle de producto
+  - detalle de producto con precio de oferta, cuenta regresiva y stock limitado
+  - página de ofertas con filtros por tipo, categoría, descuento y orden
+  - módulo de atención médica (`/medical`) con productos de salud y tema propio
   - login y registro de clientes contra el gateway
   - sesión JWT persistida en el navegador
+  - panel de administración de productos y ofertas
 - [ ] Fase 3: carrito, pedidos y checkout
 - [ ] Demás servicios: esqueletos con health/security (semanas 3-4)
 
@@ -129,10 +133,11 @@ Invoke-RestMethod http://localhost:8103/actuator/health
 Invoke-RestMethod http://localhost:8080/actuator/health
 ```
 
-El frontend siempre llama al gateway. Ejemplo de listado de productos:
+El frontend siempre llama al gateway. Ejemplo de listado de productos y ofertas:
 
 ```powershell
 Invoke-RestMethod "http://localhost:8080/api/products?size=5"
+Invoke-RestMethod "http://localhost:8080/api/deals?size=5"
 ```
 
 Contrato del catálogo: [`docs/catalog-service.md`](docs/catalog-service.md).
@@ -147,7 +152,7 @@ npm install
 npm run dev
 ```
 
-Abrir <http://localhost:3000>. El frontend llama siempre al gateway en
+Abrir <http://localhost:3001>. El frontend llama siempre al gateway en
 `http://localhost:8080/api`; no usa los puertos internos de los servicios.
 
 Si el gateway está en otra URL, definir la variable antes de arrancar:
@@ -189,6 +194,14 @@ Se crean con `V2__seed_dev.sql`. **Cámbialas antes de desplegar.**
 | GET | `/api/products` | pública |
 | GET | `/api/products/{id}` | pública |
 | POST | `/api/products` | Bearer JWT de ADMIN |
+| PUT | `/api/products/{id}` | Bearer JWT de ADMIN |
+| DELETE | `/api/products/{id}` | Bearer JWT de ADMIN |
+| GET | `/api/deals` | pública |
+| GET | `/api/deals/{id}` | pública |
+| GET | `/api/deals/admin` | Bearer JWT de ADMIN |
+| POST | `/api/deals` | Bearer JWT de ADMIN |
+| PUT | `/api/deals/{id}` | Bearer JWT de ADMIN |
+| DELETE | `/api/deals/{id}` | Bearer JWT de ADMIN |
 | GET | `/api/catalog/categories` | pública |
 | GET | `/api/catalog/brands` | pública |
 
@@ -241,7 +254,7 @@ amazon-clone/
 │   ├── catalog-service/     # 8103  (listo, base propia arbol_venta_catalog)
 │   ├── gateway/             # 8080  (proxy)
 │   └── ...
-└── web/                     # 3000  (Next.js, Fase 2)
+└── web/                     # 3001  (Next.js, Fase 2 + ofertas)
 ```
 
 ## Reglas del proyecto

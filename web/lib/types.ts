@@ -1,5 +1,7 @@
 export type AccountType = 'ADMIN' | 'CUSTOMER';
 
+export type DealType = 'DAILY' | 'LIGHTNING' | 'FEATURED';
+
 export interface ProductSummary {
   id: string;
   name: string;
@@ -11,6 +13,53 @@ export interface ProductSummary {
   ratingCount: number;
   categoryName: string | null;
   brandName: string | null;
+  dealId: string | null;
+  dealPrice: number | null;
+  dealDiscountPercent: number | null;
+  dealType: DealType | null;
+  dealTitle: string | null;
+  dealEndsAt: string | null;
+  dealStockRemaining: number | null;
+  dealStockPercent: number | null;
+  dealStockLimit: number | null;
+}
+
+export interface DealSummary {
+  id: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  image: string | null;
+  categoryName: string | null;
+  brandName: string | null;
+  originalPrice: number;
+  dealPrice: number;
+  discountPercent: number;
+  dealType: DealType;
+  title: string | null;
+  startsAt: string;
+  endsAt: string;
+  stockLimit: number;
+  stockSold: number;
+  stockRemaining: number;
+  stockPercent: number;
+  productStock: number;
+  ratingAvg: number;
+  ratingCount: number;
+  status: number;
+  active: boolean;
+}
+
+export interface DealInput {
+  productId: string;
+  title?: string;
+  dealType: DealType;
+  discountPercent: number;
+  startsAt: string;
+  endsAt: string;
+  stockLimit?: number;
+  stockSold?: number;
+  status?: number;
 }
 
 export interface ProductDetail extends ProductSummary {
@@ -31,6 +80,35 @@ export interface PageResponse<T> {
   size: number;
   totalElements: number;
   totalPages: number;
+}
+
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface CartResponse {
+  items: CartItem[];
+}
+
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface OrderResponse {
+  id: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  items: OrderItem[];
+}
+
+export interface CheckoutInput {
+  items: { productId: string; quantity: number }[];
 }
 
 export interface Category {

@@ -42,9 +42,11 @@ public class SecurityConfig {
                                 "/v3/api-docs",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        // Catálogo público para la tienda
+                        // Catálogo y ofertas públicos para la tienda.
+                        // La lectura de /api/deals/admin valida el rol en el controlador.
                         .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/deals/**").permitAll()
                         // El resto (futuras escrituras del admin) exige token
                         .anyRequest().authenticated()
                 )

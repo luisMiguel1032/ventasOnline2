@@ -8,9 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -98,6 +100,63 @@ public class ProductController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(catalogService.createProduct(tenantId, request));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductDetail> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ProductRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) {
+            throw new ApiException(
+                    HttpStatus.UNAUTHORIZED,
+                    ApiErrorCode.NO_AUTORIZADO,
+                    "Autenticación requerida");
+        }
+
+        JwtPrincipal principal = JwtPrincipal.from(jwt);
+        if (!principal.isAdmin()) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    ApiErrorCode.PROHIBIDO,
+                    "Solo un administrador puede editar productos");
+        }
+
+        UUID tenantId = principal.tenantId() == null
+                ? defaultTenantId
+                : principal.tenantId();
+
+        return ResponseEntity.ok(catalogService.updateProduct(tenantId, id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null) {
+            throw new ApiException(
+                    HttpStatus.UNAUTHORIZED,
+                    ApiErrorCode.NO_AUTORIZADO,
+                    "Autenticación requerida");
+        }
+
+        JwtPrincipal principal = JwtPrincipal.from(jwt);
+        if (!principal.isAdmin()) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    ApiErrorCode.PROHIBIDO,
+                    "Solo un administrador puede eliminar productos");
+        }
+
+        UUID tenantId = principal.tenantId() == null
+                ? defaultTenantId
+                : principal.tenantId();
+
+        catalogService.deleteProduct(tenantId, id);
+
+        return ResponseEntity.noContent().build();
     }
 
     private UUID tenant(Jwt jwt) {

@@ -1,10 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
+import { DealCard } from '@/components/DealCard';
 import { ProductCard } from '@/components/ProductCard';
-import { ApiError, getCategories, getProducts } from '@/lib/api';
-import type { Category, PageResponse, ProductSummary } from '@/lib/types';
+import { ApiError, getCategories, getDeals, getProducts } from '@/lib/api';
+import type {
+  Category,
+  DealSummary,
+  PageResponse,
+  ProductSummary,
+} from '@/lib/types';
 
 const PAGE_SIZE = 12;
 
@@ -21,6 +28,8 @@ export default function HomePage() {
     null,
   );
   const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredDeals, setFeaturedDeals] = useState<DealSummary[]>([]);
+  const [lightningDeals, setLightningDeals] = useState<DealSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +48,22 @@ export default function HomePage() {
       })
       .catch(() => {
         // Si falla, el catálogo sigue funcionando sin los filtros.
+      });
+
+    getDeals({ type: 'FEATURED', sort: 'discount_desc', size: 4 })
+      .then((result) => {
+        if (active) setFeaturedDeals(result.content);
+      })
+      .catch(() => {
+        // Las ofertas son un extra: el catálogo no depende de ellas.
+      });
+
+    getDeals({ type: 'LIGHTNING', sort: 'ending_soon', size: 4 })
+      .then((result) => {
+        if (active) setLightningDeals(result.content);
+      })
+      .catch(() => {
+        // Idem: si falla, simplemente no se muestra la franja.
       });
 
     return () => {
@@ -133,7 +158,54 @@ export default function HomePage() {
         </form>
       </section>
 
-      <section className="toolbar" aria-label="Filtros del catálogo">
+      {featuredDeals.length > 0 && (
+        <section className="deal-section" aria-labelledby="featured-deals-title">
+          <header className="deal-section-head">
+            <div>
+              <p className="eyebrow">Ahorra más</p>
+              <h2 id="featured-deals-title">Ofertas destacadas</h2>
+            </div>
+            <Link href="/deals?type=FEATURED" className="text-link">
+              Ver destacadas →
+            </Link>
+          </header>
+
+          <div className="deal-grid">
+            {featuredDeals.map((deal) => (
+              <DealCard key={deal.id} deal={deal} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {lightningDeals.length > 0 && (
+        <section
+          className="deal-section deal-section--lightning"
+          aria-labelledby="lightning-deals-title"
+        >
+          <header className="deal-section-head">
+            <div>
+              <p className="eyebrow">⚡ Por tiempo limitado</p>
+              <h2 id="lightning-deals-title">Ofertas relámpago</h2>
+            </div>
+            <Link href="/deals?type=LIGHTNING" className="text-link">
+              Ver relámpagos →
+            </Link>
+          </header>
+
+          <div className="deal-grid">
+            {lightningDeals.map((deal) => (
+              <DealCard key={deal.id} deal={deal} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section
+        className="toolbar"
+        id="categorias"
+        aria-label="Filtros del catálogo"
+      >
         <div className="chips">
           <button
             type="button"
