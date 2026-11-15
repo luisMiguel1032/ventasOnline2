@@ -27,6 +27,7 @@ public record ProductSummary(
         Instant dealEndsAt,
         BigDecimal dealStockRemaining,
         Integer dealStockPercent,
-        BigDecimal dealStockLimit
+        BigDecimal dealStockLimit,
+        String videoUrl
 ) {
 }

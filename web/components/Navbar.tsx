@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useAuth } from './AuthProvider';
 
 export function Navbar() {
-  const { session, ready, logout, isAdmin } = useAuth();
+  const { session, ready, logout, isAdmin, adminMode, setViewMode } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,7 +46,7 @@ export function Navbar() {
             Productos
           </Link>
 
-          {!ready ? null : isAdmin ? (
+          {!ready ? null : adminMode ? (
             <Link
               href="/admin"
               onClick={closeMenu}
@@ -77,8 +77,25 @@ export function Navbar() {
             <div className="nav-session">
               <span className="nav-user">
                 Hola, {session.name.split(' ')[0] || session.name}
-                {isAdmin ? ' (Admin)' : ''}
+                {isAdmin
+                  ? adminMode
+                    ? ' (Admin)'
+                    : ' (Modo cliente)'
+                  : ''}
               </span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className="nav-button"
+                  onClick={() => {
+                    setViewMode(adminMode ? 'client' : 'admin');
+                    closeMenu();
+                    if (adminMode) router.push('/');
+                  }}
+                >
+                  {adminMode ? 'Ver como cliente' : 'Volver a admin'}
+                </button>
+              )}
               <button type="button" className="nav-button" onClick={handleLogout}>
                 Salir
               </button>

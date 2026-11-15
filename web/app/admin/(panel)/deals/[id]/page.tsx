@@ -30,6 +30,7 @@ function dealAsProduct(deal: DealSummary): ProductSummary {
     dealStockRemaining: Number(deal.stockRemaining),
     dealStockPercent: Number(deal.stockPercent),
     dealStockLimit: Number(deal.stockLimit),
+    videoUrl: null,
   };
 }
 

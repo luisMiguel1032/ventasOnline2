@@ -33,6 +33,7 @@ public record ProductDetail(
         Instant dealEndsAt,
         BigDecimal dealStockRemaining,
         Integer dealStockPercent,
-        BigDecimal dealStockLimit
+        BigDecimal dealStockLimit,
+        String videoUrl
 ) {
 }

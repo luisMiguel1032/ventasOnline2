@@ -19,10 +19,15 @@ import {
 } from '@/lib/session';
 import type { AdminLoginInput, AuthResponse, RegisterInput, Session } from '@/lib/types';
 
+type ViewMode = 'admin' | 'client';
+
 interface AuthContextValue {
   session: Session | null;
   ready: boolean;
   isAdmin: boolean;
+  adminMode: boolean;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   login: (email: string, password: string) => Promise<Session>;
   loginAsAdmin: (input: AdminLoginInput) => Promise<Session>;
   register: (input: RegisterInput) => Promise<Session>;
@@ -38,22 +43,32 @@ function toSession(auth: AuthResponse): Session {
   };
 }
 
+const VIEW_MODE_KEY = 'arboldeventa.viewMode';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [viewMode, setViewModeState] = useState<ViewMode>('admin');
 
   useEffect(() => {
-    const sync = () => setSession(readSession());
+    const syncSession = () => setSession(readSession());
+    const syncViewMode = () => {
+      const saved = window.localStorage.getItem(VIEW_MODE_KEY);
+      setViewModeState(saved === 'client' ? 'client' : 'admin');
+    };
 
-    sync();
+    syncSession();
+    syncViewMode();
     setReady(true);
 
-    window.addEventListener(SESSION_EVENT, sync);
-    window.addEventListener('storage', sync);
+    window.addEventListener(SESSION_EVENT, syncSession);
+    window.addEventListener('storage', syncSession);
+    window.addEventListener('storage', syncViewMode);
 
     return () => {
-      window.removeEventListener(SESSION_EVENT, sync);
-      window.removeEventListener('storage', sync);
+      window.removeEventListener(SESSION_EVENT, syncSession);
+      window.removeEventListener('storage', syncSession);
+      window.removeEventListener('storage', syncViewMode);
     };
   }, []);
 
@@ -81,16 +96,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return nextSession;
   }, []);
 
+  const setViewMode = useCallback((mode: ViewMode) => {
+    window.localStorage.setItem(VIEW_MODE_KEY, mode);
+    setViewModeState(mode);
+  }, []);
+
   const logout = useCallback(() => {
     clearSession();
+    window.localStorage.removeItem(VIEW_MODE_KEY);
     setSession(null);
+    setViewModeState('admin');
   }, []);
 
   const isAdmin = session?.accountType === 'ADMIN';
+  const adminMode = isAdmin && viewMode === 'admin';
 
   const value = useMemo<AuthContextValue>(
-    () => ({ session, ready, isAdmin, login, loginAsAdmin, register, logout }),
-    [session, ready, isAdmin, login, loginAsAdmin, register, logout],
+    () => ({
+      session,
+      ready,
+      isAdmin,
+      adminMode,
+      viewMode,
+      setViewMode,
+      login,
+      loginAsAdmin,
+      register,
+      logout,
+    }),
+    [session, ready, isAdmin, adminMode, viewMode, setViewMode, login, loginAsAdmin, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

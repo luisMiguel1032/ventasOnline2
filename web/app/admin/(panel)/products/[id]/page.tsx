@@ -36,6 +36,7 @@ export default function AdminEditProductPage() {
   const [categoryId, setCategoryId] = useState('');
   const [brandId, setBrandId] = useState('');
   const [image, setImage] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [features, setFeatures] = useState('');
   const [type, setType] = useState('physical');
   const [unitName, setUnitName] = useState('unidad');
@@ -63,6 +64,7 @@ export default function AdminEditProductPage() {
         setCategoryId(prod.categoryId ?? '');
         setBrandId(prod.brandId ?? '');
         setImage(prod.image ?? '');
+        setVideoUrl(prod.videoUrl ?? '');
         setFeatures(prod.features ?? '');
         setType(prod.type ?? 'physical');
         setUnitName(prod.unitName ?? 'unidad');
@@ -111,6 +113,7 @@ export default function AdminEditProductPage() {
       categoryId: categoryId || undefined,
       brandId: brandId || undefined,
       image: image.trim() || undefined,
+      videoUrl: videoUrl.trim() || undefined,
       features: features.trim() || undefined,
       type: type.trim() || undefined,
       unitName: unitName.trim() || undefined,
@@ -288,6 +291,17 @@ export default function AdminEditProductPage() {
                 value={image}
                 onChange={(e) => setImage(e.target.value)}
                 maxLength={500}
+              />
+            </label>
+
+            <label className="field">
+              <span>URL de video</span>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                maxLength={500}
+                placeholder="https://...mp4"
               />
             </label>
 

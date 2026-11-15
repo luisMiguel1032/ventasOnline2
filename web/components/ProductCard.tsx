@@ -36,6 +36,11 @@ export function ProductCard({ product }: { product: ProductSummary }) {
             {formatDiscount(product.dealDiscountPercent)}
           </span>
         )}
+        {product.videoUrl && (
+          <span className="product-video-badge" aria-hidden="true">
+            ▶ Video
+          </span>
+        )}
       </Link>
 
       <div className="product-body">

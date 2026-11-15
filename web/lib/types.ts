@@ -7,6 +7,7 @@ export interface ProductSummary {
   name: string;
   slug: string;
   image: string | null;
+  videoUrl: string | null;
   price: number;
   stock: number;
   ratingAvg: number;
@@ -160,6 +161,7 @@ export interface ProductInput {
   categoryId?: string;
   brandId?: string;
   image?: string;
+  videoUrl?: string;
   features?: string;
   type?: string;
   unitName?: string;

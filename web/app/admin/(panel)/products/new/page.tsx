@@ -23,6 +23,7 @@ export default function AdminNewProductPage() {
   const [categoryId, setCategoryId] = useState('');
   const [brandId, setBrandId] = useState('');
   const [image, setImage] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [features, setFeatures] = useState('');
 
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function AdminNewProductPage() {
       categoryId: categoryId || undefined,
       brandId: brandId || undefined,
       image: image.trim() || undefined,
+      videoUrl: videoUrl.trim() || undefined,
       features: features.trim() || undefined,
     };
 
@@ -207,6 +209,17 @@ export default function AdminNewProductPage() {
               onChange={(e) => setImage(e.target.value)}
               maxLength={500}
               placeholder="https://..."
+            />
+          </label>
+
+          <label className="field">
+            <span>URL de video</span>
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              maxLength={500}
+              placeholder="https://...mp4"
             />
           </label>
 

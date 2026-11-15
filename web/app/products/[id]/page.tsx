@@ -175,6 +175,14 @@ export default function ProductDetailPage() {
               ))}
             </div>
           )}
+
+          {product.videoUrl && (
+            <div className="detail-video">
+              <video controls poster={mainImage} src={product.videoUrl}>
+                Tu navegador no soporta video.
+              </video>
+            </div>
+          )}
         </div>
 
         <div className="detail-info">

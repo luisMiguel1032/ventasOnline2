@@ -37,7 +37,7 @@ public class CatalogRepository {
                    rating_avg, rating_count, category_name, brand_name,
                    deal_id, deal_price, deal_discount_percent, deal_type,
                    deal_title, deal_ends_at, deal_stock_remaining,
-                   deal_stock_percent, deal_stock_limit
+                   deal_stock_percent, deal_stock_limit, video_url
             from v_shop_products
             """;
 
@@ -99,7 +99,8 @@ public class CatalogRepository {
                 toInstant(rs, "deal_ends_at"),
                 rs.getBigDecimal("deal_stock_remaining"),
                 nullableInt(rs, "deal_stock_percent"),
-                rs.getBigDecimal("deal_stock_limit")
+                rs.getBigDecimal("deal_stock_limit"),
+                rs.getString("video_url")
         ));
     }
 
@@ -135,7 +136,7 @@ public class CatalogRepository {
                        categorie_id, category_name, brand_id, brand_name, unit_name,
                        deal_id, deal_price, deal_discount_percent, deal_type,
                        deal_title, deal_ends_at, deal_stock_remaining,
-                       deal_stock_percent, deal_stock_limit
+                       deal_stock_percent, deal_stock_limit, video_url
                 from v_shop_products
                 where tenant_id = :tenantId and id = :id
                 """, params, (rs, rowNum) -> new ProductDetail(
@@ -166,7 +167,8 @@ public class CatalogRepository {
                 toInstant(rs, "deal_ends_at"),
                 rs.getBigDecimal("deal_stock_remaining"),
                 nullableInt(rs, "deal_stock_percent"),
-                rs.getBigDecimal("deal_stock_limit")
+                rs.getBigDecimal("deal_stock_limit"),
+                rs.getString("video_url")
         ));
 
         return results.stream().findFirst()
@@ -256,6 +258,7 @@ public class CatalogRepository {
                 .addValue("description", request.description())
                 .addValue("slug", slug)
                 .addValue("image", request.image())
+                .addValue("videoUrl", request.videoUrl())
                 .addValue("features", request.features())
                 .addValue("type", normalizeOrDefault(request.type(), "physical"))
                 .addValue("price", request.price())
@@ -267,11 +270,11 @@ public class CatalogRepository {
         jdbc.update("""
                 insert into products (
                     id, tenant_id, category_id, brand_id, code, item_code,
-                    name, description, slug, image, features, type, price,
+                    name, description, slug, image, video_url, features, type, price,
                     stock, rating_avg, rating_count, unit_name, status
                 ) values (
                     :id, :tenantId, :categoryId, :brandId, :code, :itemCode,
-                    :name, :description, :slug, :image, :features, :type,
+                    :name, :description, :slug, :image, :videoUrl, :features, :type,
                     :price, :stock, 0, 0, :unitName, 1
                 )
                 """, params);
@@ -312,6 +315,7 @@ public class CatalogRepository {
                 .addValue("description", request.description())
                 .addValue("slug", slug)
                 .addValue("image", request.image())
+                .addValue("videoUrl", request.videoUrl())
                 .addValue("features", request.features())
                 .addValue("type", request.type() == null || request.type().isBlank()
                         ? null
@@ -332,6 +336,7 @@ public class CatalogRepository {
                     description = :description,
                     slug = :slug,
                     image = :image,
+                    video_url = :videoUrl,
                     features = :features,
                     type = coalesce(:type, type),
                     price = :price,
@@ -649,7 +654,8 @@ public class CatalogRepository {
                 product.dealEndsAt(),
                 product.dealStockRemaining(),
                 product.dealStockPercent(),
-                product.dealStockLimit()
+                product.dealStockLimit(),
+                product.videoUrl()
         );
     }
 

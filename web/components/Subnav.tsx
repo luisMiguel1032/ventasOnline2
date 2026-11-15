@@ -17,7 +17,7 @@ type SubnavItem = {
 
 export function Subnav() {
   const pathname = usePathname();
-  const { isAdmin, session } = useAuth();
+  const { adminMode, session } = useAuth();
 
   const items: SubnavItem[] = [
     { label: 'Todo', href: '/', icon: '☰' },
@@ -38,7 +38,7 @@ export function Subnav() {
     { label: 'Servicio al Cliente', href: '#', soon: true },
     { label: 'Mis Pedidos', href: '#', soon: true },
     { label: 'Listas', href: '#', soon: true },
-    isAdmin
+    adminMode
       ? { label: 'Vender', href: '/admin/products/new' }
       : { label: 'Vender', href: '#', soon: true },
   ];

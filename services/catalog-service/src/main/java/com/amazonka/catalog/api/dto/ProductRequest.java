@@ -33,6 +33,9 @@ public record ProductRequest(
         @Size(max = 500, message = "La URL de la imagen es demasiado larga")
         String image,
 
+        @Size(max = 500, message = "La URL del video es demasiado larga")
+        String videoUrl,
+
         String features,
 
         @Size(max = 40, message = "El tipo es demasiado largo")

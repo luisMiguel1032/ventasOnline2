@@ -30,6 +30,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredDeals, setFeaturedDeals] = useState<DealSummary[]>([]);
   const [lightningDeals, setLightningDeals] = useState<DealSummary[]>([]);
+  const [videoProducts, setVideoProducts] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +65,18 @@ export default function HomePage() {
       })
       .catch(() => {
         // Idem: si falla, simplemente no se muestra la franja.
+      });
+
+    getProducts({ sort: 'newest', size: 24 })
+      .then((result) => {
+        if (active) {
+          setVideoProducts(
+            result.content.filter((product) => Boolean(product.videoUrl)).slice(0, 4),
+          );
+        }
+      })
+      .catch(() => {
+        // Los videos son un extra: el catálogo no depende de ellos.
       });
 
     return () => {
@@ -196,6 +209,26 @@ export default function HomePage() {
           <div className="deal-grid">
             {lightningDeals.map((deal) => (
               <DealCard key={deal.id} deal={deal} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {videoProducts.length > 0 && (
+        <section className="deal-section deal-section--video" aria-labelledby="video-products-title">
+          <header className="deal-section-head">
+            <div>
+              <p className="eyebrow">▶ Compra en video</p>
+              <h2 id="video-products-title">Videos de productos</h2>
+            </div>
+            <Link href="/products" className="text-link">
+              Ver catálogo →
+            </Link>
+          </header>
+
+          <div className="product-grid">
+            {videoProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </section>

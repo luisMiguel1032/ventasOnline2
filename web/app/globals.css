@@ -1832,3 +1832,29 @@ img {
 .medical-hero h1 {
   color: #0f3d3e;
 }
+
+.product-video-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 17, 17, 0.78);
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.detail-video {
+  margin-top: 12px;
+}
+
+.detail-video video {
+  width: 100%;
+  border-radius: var(--radius);
+  background: #000000;
+}
