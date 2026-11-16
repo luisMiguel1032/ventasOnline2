@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { ApiError } from '@/lib/api';
 
 function LoginForm() {
-  const { login, session, ready } = useAuth();
+  const { login, loginAsAdmin, session, ready } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -18,7 +18,7 @@ function LoginForm() {
       ? requestedNext
       : '/';
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -28,9 +28,20 @@ function LoginForm() {
     setError(null);
     setSubmitting(true);
 
+    const value = identifier.trim();
+
     try {
-      await login(email.trim(), password);
-      router.push(next);
+      try {
+        await login(value, password);
+        router.push(next);
+        return;
+      } catch (customerError) {
+        // Si no es cliente, intentamos como administrador con el mismo identificador.
+        const adminSession = await loginAsAdmin({ login: value, password });
+        router.push(
+          adminSession.accountType === 'ADMIN' ? '/admin' : next,
+        );
+      }
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -43,7 +54,13 @@ function LoginForm() {
   }
 
   function fillDemo() {
-    setEmail('cliente@demo.com');
+    setIdentifier('cliente@demo.com');
+    setPassword('12345678');
+    setError(null);
+  }
+
+  function fillAdminDemo() {
+    setIdentifier('admin');
     setPassword('12345678');
     setError(null);
   }
@@ -70,7 +87,7 @@ function LoginForm() {
       <p className="eyebrow">Mi cuenta</p>
       <h1>Iniciar sesión</h1>
       <p className="auth-lead">
-        Ingresa con el correo y la contraseña de tu cuenta de cliente.
+        Ingresa con tu correo (cliente) o usuario (administrador).
       </p>
 
       {error && (
@@ -81,13 +98,13 @@ function LoginForm() {
 
       <form className="form" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Correo electrónico</span>
+          <span>Correo o usuario</span>
           <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="tu@correo.com"
-            autoComplete="email"
+            type="text"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            placeholder="tu@correo.com o admin"
+            autoComplete="username"
             required
           />
         </label>
@@ -117,11 +134,17 @@ function LoginForm() {
       <div className="demo-note">
         <div>
           <strong>Credenciales demo</strong>
-          <p>cliente@demo.com · 12345678</p>
+          <p>Cliente: cliente@demo.com · 12345678</p>
+          <p>Admin: admin · 12345678</p>
         </div>
-        <button type="button" className="btn btn-ghost btn-small" onClick={fillDemo}>
-          Rellenar
-        </button>
+        <div className="demo-note-actions">
+          <button type="button" className="btn btn-ghost btn-small" onClick={fillDemo}>
+            Cliente
+          </button>
+          <button type="button" className="btn btn-ghost btn-small" onClick={fillAdminDemo}>
+            Admin
+          </button>
+        </div>
       </div>
     </div>
   );

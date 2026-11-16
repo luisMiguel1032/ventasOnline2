@@ -984,6 +984,12 @@ img {
   background: #fffaf1;
 }
 
+.demo-note-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .demo-note strong {
   font-size: 0.82rem;
 }
