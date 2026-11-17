@@ -46,8 +46,12 @@ interface RequestOptions extends RequestInit {
   token?: string | null;
 }
 
+const CLIENT_CACHE = new Map<string, { data: unknown; expires: number }>();
+const CLIENT_CACHE_TTL = 30_000;
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, ...init } = options;
+  const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers);
 
   if (init.body && !headers.has('Content-Type')) {
@@ -58,6 +62,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const cacheKey = method === 'GET' && !token ? path : null;
+  if (cacheKey) {
+    const cached = CLIENT_CACHE.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return cached.data as T;
+    }
   }
 
   let response: Response;
@@ -92,6 +104,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       body && 'details' in body ? body.details : undefined,
       body && typeof body.path === 'string' ? body.path : undefined,
     );
+  }
+
+  if (cacheKey) {
+    CLIENT_CACHE.set(cacheKey, {
+      data: body,
+      expires: Date.now() + CLIENT_CACHE_TTL,
+    });
+  }
+
+  if (method !== 'GET') {
+    CLIENT_CACHE.clear();
   }
 
   return body as T;
