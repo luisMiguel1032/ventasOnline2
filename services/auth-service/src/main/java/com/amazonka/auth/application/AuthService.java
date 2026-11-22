@@ -134,6 +134,17 @@ public class AuthService {
         customer.setName(request.name().trim());
         customer.setEmail(email);
         customer.setPhone(request.phone());
+        customer.setDocumentType(blankToNull(request.documentType()));
+        customer.setDocumentNumber(blankToNull(request.documentNumber()));
+        customer.setAddress(blankToNull(request.address()));
+        customer.setCity(blankToNull(request.city()));
+        customer.setState(blankToNull(request.state()));
+        customer.setCountry(blankToNull(request.country()));
+        customer.setPostalCode(blankToNull(request.postalCode()));
+        customer.setReference(blankToNull(request.reference()));
+        customer.setCustomerType(blankToNull(request.customerType()));
+        customer.setBusinessName(blankToNull(request.businessName()));
+        customer.setTaxId(blankToNull(request.taxId()));
         customer.setPassword(passwordEncoder.encode(request.password()));
         customer.setStatus((short) 1);
 
@@ -173,6 +184,13 @@ public class AuthService {
 
     private static String normalizeEmail(String email) {
         return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private static ApiException credencialesInvalidas() {

@@ -6,6 +6,8 @@ import java.util.UUID;
 public record OrderItemResponse(
         UUID productId,
         String productName,
+        String productSlug,
+        String imageUrl,
         BigDecimal unitPrice,
         BigDecimal quantity,
         BigDecimal lineTotal

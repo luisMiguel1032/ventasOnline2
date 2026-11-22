@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -44,9 +44,9 @@ export default function OrderDetailPage() {
   if (!session) {
     return (
       <div className="empty-state">
-        <h2>Inicia sesión para ver el pedido</h2>
+        <h2>Inicia sesiÃ³n para ver el pedido</h2>
         <Link href="/login" className="btn btn-primary">
-          Iniciar sesión
+          Iniciar sesiÃ³n
         </Link>
       </div>
     );
@@ -60,7 +60,7 @@ export default function OrderDetailPage() {
           <h1>{order ? `Pedido ${order.id.slice(0, 8)}` : 'Pedido'}</h1>
         </div>
         <Link href="/orders" className="btn btn-ghost">
-          ← Mis pedidos
+          â† Mis pedidos
         </Link>
       </header>
 
@@ -71,17 +71,39 @@ export default function OrderDetailPage() {
       )}
 
       {loading ? (
-        <div className="admin-card">Cargando pedido…</div>
+        <div className="admin-card">Cargando pedidoâ€¦</div>
       ) : order ? (
         <div className="admin-card">
           <p>
-            <strong>Estado:</strong> {order.status}
+            <strong>NÃºmero:</strong> {order.orderNumber ?? order.id.slice(0, 8)}
           </p>
+          <p>
+            <strong>Estado:</strong> {order.status}
+            {order.paymentStatus ? ` Â· Pago: ${order.paymentStatus}` : ''}
+          </p>
+          {order.subtotal != null && (
+            <p>
+              <strong>Subtotal:</strong> {formatPrice(order.subtotal)}
+            </p>
+          )}
+          {order.discount != null && order.discount > 0 && (
+            <p>
+              <strong>Descuento:</strong> {formatPrice(order.discount)}
+            </p>
+          )}
           <p>
             <strong>Total:</strong> {formatPrice(order.totalAmount)}
           </p>
+          {(order.shippingName || order.shippingAddress || order.shippingCity || order.shippingPhone) && (
+            <div className="hint" style={{ marginTop: '1rem' }}>
+              <strong>EnvÃ­o:</strong>
+              <div>{order.shippingName ?? 'â€”'}</div>
+              <div>{[order.shippingAddress, order.shippingCity].filter(Boolean).join(', ') || 'â€”'}</div>
+              {order.shippingPhone ? <div>Tel: {order.shippingPhone}</div> : null}
+            </div>
+          )}
 
-          <table className="admin-table">
+          <table className="admin-table" style={{ marginTop: '1rem' }}>
             <thead>
               <tr>
                 <th>Producto</th>
@@ -92,8 +114,16 @@ export default function OrderDetailPage() {
             </thead>
             <tbody>
               {order.items.map((item, idx) => (
-                <tr key={idx}>
-                  <td>{item.productName}</td>
+                <tr key={`${item.productId}-${idx}`}>
+                  <td>
+                    {item.productSlug ? (
+                      <Link href={`/products/${item.productId}`} className="admin-link">
+                        {item.productName}
+                      </Link>
+                    ) : (
+                      item.productName
+                    )}
+                  </td>
                   <td>{formatPrice(item.unitPrice)}</td>
                   <td>{item.quantity}</td>
                   <td>{formatPrice(item.lineTotal)}</td>
@@ -106,3 +136,4 @@ export default function OrderDetailPage() {
     </div>
   );
 }
+

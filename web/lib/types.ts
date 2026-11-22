@@ -1,4 +1,4 @@
-export type AccountType = 'ADMIN' | 'CUSTOMER';
+﻿export type AccountType = 'ADMIN' | 'CUSTOMER';
 
 export type DealType = 'DAILY' | 'LIGHTNING' | 'FEATURED';
 
@@ -86,6 +86,10 @@ export interface PageResponse<T> {
 export interface CartItem {
   productId: string;
   quantity: number;
+  productName?: string | null;
+  productSlug?: string | null;
+  imageUrl?: string | null;
+  unitPrice?: number | null;
 }
 
 export interface CartResponse {
@@ -95,6 +99,8 @@ export interface CartResponse {
 export interface OrderItem {
   productId: string;
   productName: string;
+  productSlug?: string | null;
+  imageUrl?: string | null;
   unitPrice: number;
   quantity: number;
   lineTotal: number;
@@ -102,14 +108,33 @@ export interface OrderItem {
 
 export interface OrderResponse {
   id: string;
+  orderNumber?: string | null;
   status: string;
+  subtotal?: number | null;
+  discount?: number | null;
   totalAmount: number;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
+  shippingCity?: string | null;
+  shippingNotes?: string | null;
+  notes?: string | null;
   createdAt: string;
+  updatedAt?: string | null;
   items: OrderItem[];
 }
 
 export interface CheckoutInput {
   items: { productId: string; quantity: number }[];
+  paymentMethod?: string;
+  shippingName?: string;
+  shippingPhone?: string;
+  shippingAddress?: string;
+  shippingCity?: string;
+  shippingNotes?: string;
+  notes?: string;
 }
 
 export interface Category {
@@ -168,3 +193,4 @@ export interface ProductInput {
   code?: string;
   itemCode?: string;
 }
+

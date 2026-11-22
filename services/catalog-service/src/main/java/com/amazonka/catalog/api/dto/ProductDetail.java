@@ -34,6 +34,16 @@ public record ProductDetail(
         BigDecimal dealStockRemaining,
         Integer dealStockPercent,
         BigDecimal dealStockLimit,
-        String videoUrl
+        String videoUrl,
+        String shortDescription,
+        String principleActive,
+        String barcode,
+        String sku,
+        BigDecimal costPrice,
+        BigDecimal compareAtPrice,
+        BigDecimal minStock,
+        Boolean soldByWeight,
+        Boolean showInShop,
+        Boolean trackInventory
 ) {
 }

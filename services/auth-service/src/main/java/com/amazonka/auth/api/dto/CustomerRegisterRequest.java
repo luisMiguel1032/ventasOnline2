@@ -16,6 +16,17 @@ public record CustomerRegisterRequest(
         @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         String password,
 
-        String phone
+        String phone,
+        String documentType,
+        String documentNumber,
+        String address,
+        String city,
+        String state,
+        String country,
+        String postalCode,
+        String reference,
+        String customerType,
+        String businessName,
+        String taxId
 ) {
 }

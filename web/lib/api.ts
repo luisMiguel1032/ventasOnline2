@@ -54,7 +54,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers);
 
-  if (init.body && !headers.has('Content-Type')) {
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -198,6 +198,24 @@ export function loginAdmin(input: AdminLoginInput): Promise<AuthResponse> {
   });
 }
 
+/** Sube una imagen al catálogo y devuelve la ruta donde quedó guardada. */
+export function uploadImage(token: string, file: File): Promise<{ url: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  return request<{ url: string }>('/catalog/uploads/image', {
+    method: 'POST',
+    token,
+    body,
+  });
+}
+
+/** Convierte una ruta devuelta por el backend en una URL que el navegador puede mostrar. */
+export function absoluteUploadUrl(url: string): string {
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+  const origin = API_URL.replace(/\/api$/, '');
+  return `${origin}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
 export function createProduct(
   token: string,
   input: ProductInput,
@@ -311,11 +329,12 @@ export function addCartItem(
   token: string,
   productId: string,
   quantity: number,
+  snapshot?: { productName?: string; productSlug?: string | null; imageUrl?: string | null; unitPrice?: number | null },
 ): Promise<CartResponse> {
   return request<CartResponse>('/cart/items', {
     method: 'POST',
     token,
-    body: JSON.stringify({ productId, quantity }),
+    body: JSON.stringify({ productId, quantity, ...snapshot }),
   });
 }
 

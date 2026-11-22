@@ -1,9 +1,13 @@
 package com.amazonka.order.application;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,6 +25,8 @@ import com.amazonka.common.exception.ApiException;
 @Service
 public class OrderService {
 
+    private static final DateTimeFormatter ORDER_NUMBER_FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
     private final OrderRepository repository;
     private final RestTemplate restTemplate;
     private final String catalogUrl;
@@ -37,7 +43,8 @@ public class OrderService {
     @Transactional
     public OrderResponse checkout(UUID tenantId, UUID customerId, CheckoutRequest request) {
         UUID orderId = UUID.randomUUID();
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal discount = BigDecimal.ZERO;
 
         // Resolve product details first.
         List<ItemData> resolved = new java.util.ArrayList<>();
@@ -52,23 +59,58 @@ public class OrderService {
                         "Producto no encontrado: " + item.productId());
             }
 
-            if (product == null || product.get("name") == null || product.get("price") == null) {
+            if (product == null || product.get("name") == null) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, ApiErrorCode.DATOS_INVALIDOS,
                         "Producto no válido: " + item.productId());
             }
 
             String name = String.valueOf(product.get("name"));
-            BigDecimal price = new BigDecimal(String.valueOf(product.get("price")));
-            BigDecimal lineTotal = price.multiply(item.quantity());
-            total = total.add(lineTotal);
+            String slug = product.get("slug") == null ? null : String.valueOf(product.get("slug"));
+            String image = product.get("image") == null ? null : String.valueOf(product.get("image"));
 
-            resolved.add(new ItemData(item.productId(), name, price, item.quantity(), lineTotal));
+            // Prefer dealPrice when present (e-commerce storefront behavior), fallback to price.
+            Object effective = product.get("dealPrice") != null ? product.get("dealPrice") : product.get("price");
+            if (effective == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, ApiErrorCode.DATOS_INVALIDOS,
+                        "Producto sin precio: " + item.productId());
+            }
+
+            BigDecimal price = new BigDecimal(String.valueOf(effective));
+            BigDecimal lineTotal = price.multiply(item.quantity());
+            subtotal = subtotal.add(lineTotal);
+
+            resolved.add(new ItemData(item.productId(), name, slug, image, price, item.quantity(), lineTotal));
         }
 
-        repository.insertOrder(tenantId, orderId, customerId, total);
+        BigDecimal total = subtotal.subtract(discount);
+        if (total.compareTo(BigDecimal.ZERO) < 0) {
+            total = BigDecimal.ZERO;
+        }
+
+        String orderNumber = generateOrderNumber();
+
+        repository.insertOrder(
+                tenantId,
+                orderId,
+                customerId,
+                orderNumber,
+                "CREATED",
+                subtotal,
+                discount,
+                total,
+                request == null ? null : request.paymentMethod(),
+                request == null ? null : request.shippingName(),
+                request == null ? null : request.shippingPhone(),
+                request == null ? null : request.shippingAddress(),
+                request == null ? null : request.shippingCity(),
+                request == null ? null : request.shippingNotes(),
+                request == null ? null : request.notes());
+
+        repository.insertStatusHistory(tenantId, orderId, null, "CREATED", "Pedido creado desde checkout web");
+
         for (ItemData data : resolved) {
             repository.insertItem(
-                    tenantId, orderId, data.productId, data.productName,
+                    tenantId, orderId, data.productId, data.productName, data.productSlug, data.imageUrl,
                     data.unitPrice, data.quantity, data.lineTotal);
         }
 
@@ -90,9 +132,17 @@ public class OrderService {
         return order;
     }
 
+    private static String generateOrderNumber() {
+        String ts = LocalDateTime.now().format(ORDER_NUMBER_FMT);
+        int rnd = ThreadLocalRandom.current().nextInt(1000, 9999);
+        return "ORD-" + ts + "-" + rnd;
+    }
+
     private record ItemData(
             UUID productId,
             String productName,
+            String productSlug,
+            String imageUrl,
             BigDecimal unitPrice,
             BigDecimal quantity,
             BigDecimal lineTotal

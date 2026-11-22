@@ -35,7 +35,8 @@ public class CartService {
             throw new ApiException(HttpStatus.BAD_REQUEST, ApiErrorCode.DATOS_INVALIDOS,
                     "La cantidad debe ser mayor a cero");
         }
-        repository.upsertItem(tenantId, customerId, request.productId(), request.quantity());
+        repository.upsertItem(tenantId, customerId, request.productId(), request.quantity(),
+                request.productName(), request.productSlug(), request.imageUrl(), request.unitPrice());
         return getCart(tenantId, customerId);
     }
 
@@ -45,7 +46,7 @@ public class CartService {
             throw new ApiException(HttpStatus.BAD_REQUEST, ApiErrorCode.DATOS_INVALIDOS,
                     "La cantidad debe ser mayor a cero");
         }
-        repository.upsertItem(tenantId, customerId, productId, quantity);
+        repository.upsertItem(tenantId, customerId, productId, quantity, null, null, null, null);
         return getCart(tenantId, customerId);
     }
 

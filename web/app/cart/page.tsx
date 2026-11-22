@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/components/AuthProvider';
 import {
@@ -14,7 +14,7 @@ import {
   removeCartItem,
   updateCartItem,
 } from '@/lib/api';
-import { formatPrice } from '@/lib/format';
+import { PLACEHOLDER_IMAGE, formatPrice } from '@/lib/format';
 import type { CartItem, ProductSummary } from '@/lib/types';
 
 export default function CartPage() {
@@ -36,12 +36,16 @@ export default function CartPage() {
     setLoading(true);
     setError(null);
     try {
-      const [cart, prods] = await Promise.all([
-        getCart(token),
-        getProducts({ size: 100 }),
-      ]);
+      const cart = await getCart(token);
       setItems(cart.items);
-      setProducts(prods.content);
+
+      const needsLookup = cart.items.some((i) => !i.productName || i.unitPrice == null);
+      if (needsLookup) {
+        const prods = await getProducts({ size: 100 });
+        setProducts(prods.content);
+      } else {
+        setProducts([]);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo cargar el carrito.');
     } finally {
@@ -55,6 +59,15 @@ export default function CartPage() {
 
   function productOf(productId: string) {
     return products.find((p) => p.id === productId);
+  }
+
+  function displayInfo(item: CartItem) {
+    const p = productOf(item.productId);
+    const name = item.productName ?? p?.name ?? item.productId.slice(0, 8);
+    const unitPrice = item.unitPrice != null ? Number(item.unitPrice) : (p ? Number(p.price) : null);
+    const image = item.imageUrl ?? p?.image ?? PLACEHOLDER_IMAGE;
+    const slug = item.productSlug ?? p?.slug ?? null;
+    return { name, unitPrice, image, slug };
   }
 
   async function handleQuantity(productId: string, quantity: number) {
@@ -87,7 +100,7 @@ export default function CartPage() {
     setError(null);
     try {
       const order = await checkout(token, {
-        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: items.map((i) => ({ productId: i.productId, quantity: Number(i.quantity) })),
       });
       await clearCart(token);
       router.push(`/orders/${order.id}`);
@@ -98,21 +111,26 @@ export default function CartPage() {
     }
   }
 
+  const total = useMemo(() => {
+    return items.reduce((sum, item) => {
+      const { unitPrice } = displayInfo(item);
+      if (unitPrice == null) return sum;
+      return sum + unitPrice * Number(item.quantity);
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, products]);
+
   if (!session) {
     return (
       <div className="empty-state">
         <h2>Inicia sesión para ver tu carrito</h2>
+        <p>Necesitas una cuenta de cliente para agregar productos y comprar.</p>
         <Link href="/login" className="btn btn-primary">
           Iniciar sesión
         </Link>
       </div>
     );
   }
-
-  const total = items.reduce((sum, item) => {
-    const p = productOf(item.productId);
-    return sum + (p ? Number(p.price) * Number(item.quantity) : 0);
-  }, 0);
 
   return (
     <div className="admin-shell">
@@ -156,33 +174,44 @@ export default function CartPage() {
             </thead>
             <tbody>
               {items.map((item) => {
-                const p = productOf(item.productId);
-                const subtotal = p ? Number(p.price) * Number(item.quantity) : 0;
+                const info = displayInfo(item);
+                const subtotal = info.unitPrice != null ? info.unitPrice * Number(item.quantity) : null;
                 return (
                   <tr key={item.productId}>
                     <td>
-                      <strong>{p?.name ?? item.productId}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={info.image}
+                          alt={info.name}
+                          width={48}
+                          height={48}
+                          style={{ objectFit: 'cover', borderRadius: 6 }}
+                        />
+                        <Link href={`/products/${item.productId}`} className="admin-link">
+                          {info.name}
+                        </Link>
+                      </div>
                     </td>
-                    <td>{p ? formatPrice(p.price) : '—'}</td>
+                    <td>{info.unitPrice != null ? formatPrice(info.unitPrice) : '—'}</td>
                     <td>
                       <input
                         type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          void handleQuantity(item.productId, Number(e.target.value))
-                        }
-                        style={{ width: '70px' }}
+                        min={1}
+                        step={1}
+                        value={Number(item.quantity)}
+                        onChange={(e) => void handleQuantity(item.productId, Number(e.target.value))}
+                        style={{ width: 80 }}
                       />
                     </td>
-                    <td>{formatPrice(subtotal)}</td>
+                    <td>{subtotal != null ? formatPrice(subtotal) : '—'}</td>
                     <td>
                       <button
                         type="button"
                         className="admin-link admin-link--danger"
                         onClick={() => void handleRemove(item.productId)}
                       >
-                        Eliminar
+                        Quitar
                       </button>
                     </td>
                   </tr>
@@ -191,17 +220,20 @@ export default function CartPage() {
             </tbody>
           </table>
 
-          <div className="admin-header-actions" style={{ marginTop: '1rem' }}>
-            <strong>Total: {formatPrice(total)}</strong>
+          <div className="admin-header-actions" style={{ marginTop: '1rem', justifyContent: 'space-between' }}>
+            <strong>Total estimado: {formatPrice(total)}</strong>
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => void handleCheckout()}
-              disabled={checkingOut}
+              disabled={checkingOut || items.length === 0}
             >
               {checkingOut ? 'Procesando…' : 'Finalizar compra'}
             </button>
           </div>
+          <p className="hint" style={{ marginTop: '0.75rem' }}>
+            Al finalizar se creará tu pedido con los precios vigentes. El pago y envío se coordinan según disponibilidad.
+          </p>
         </div>
       )}
     </div>

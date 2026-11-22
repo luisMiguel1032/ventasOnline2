@@ -5,7 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { useAuth } from '@/components/AuthProvider';
-import { ApiError, createProduct, getBrands, getCategories } from '@/lib/api';
+import { ImageField } from '@/components/ImageField';
+import {
+  ApiError,
+  absoluteUploadUrl,
+  createProduct,
+  getBrands,
+  getCategories,
+  uploadImage,
+} from '@/lib/api';
 import type { Brand, Category, ProductInput } from '@/lib/types';
 
 export default function AdminNewProductPage() {
@@ -23,6 +31,7 @@ export default function AdminNewProductPage() {
   const [categoryId, setCategoryId] = useState('');
   const [brandId, setBrandId] = useState('');
   const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [features, setFeatures] = useState('');
 
@@ -69,20 +78,26 @@ export default function AdminNewProductPage() {
       return;
     }
 
-    const input: ProductInput = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      price: priceNum,
-      stock: stockNum,
-      categoryId: categoryId || undefined,
-      brandId: brandId || undefined,
-      image: image.trim() || undefined,
-      videoUrl: videoUrl.trim() || undefined,
-      features: features.trim() || undefined,
-    };
-
     setSubmitting(true);
     try {
+      let imageValue = image.trim() || undefined;
+      if (imageFile) {
+        const uploaded = await uploadImage(session.accessToken, imageFile);
+        imageValue = absoluteUploadUrl(uploaded.url);
+      }
+
+      const input: ProductInput = {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        price: priceNum,
+        stock: stockNum,
+        categoryId: categoryId || undefined,
+        brandId: brandId || undefined,
+        image: imageValue,
+        videoUrl: videoUrl.trim() || undefined,
+        features: features.trim() || undefined,
+      };
+
       const created = await createProduct(session.accessToken, input);
       router.push(`/products/${created.id}`);
     } catch (err) {
@@ -201,16 +216,18 @@ export default function AdminNewProductPage() {
             </label>
           </div>
 
-          <label className="field">
-            <span>URL de imagen</span>
-            <input
-              type="url"
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              maxLength={500}
-              placeholder="https://..."
-            />
-          </label>
+          <ImageField
+            value={image}
+            onChange={(next) => {
+              if (next instanceof File) {
+                setImageFile(next);
+                setImage('');
+              } else {
+                setImageFile(null);
+                setImage(next);
+              }
+            }}
+          />
 
           <label className="field">
             <span>URL de video</span>

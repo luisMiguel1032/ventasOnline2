@@ -40,10 +40,16 @@ public class ProxyWebFilter implements WebFilter {
 
     private final GatewayProperties properties;
     private final WebClient webClient;
+    private final RouteCircuitBreaker circuitBreaker;
 
-    public ProxyWebFilter(GatewayProperties properties) {
+    public ProxyWebFilter(
+            GatewayProperties properties,
+            WebClient webClient,
+            RouteCircuitBreaker circuitBreaker) {
+
         this.properties = properties;
-        this.webClient = WebClient.builder().build();
+        this.webClient = webClient;
+        this.circuitBreaker = circuitBreaker;
     }
 
     @Override
@@ -56,6 +62,10 @@ public class ProxyWebFilter implements WebFilter {
             return chain.filter(exchange);
         }
 
+        if (!circuitBreaker.allows(route.id())) {
+            return serviceUnavailable(exchange, route);
+        }
+
         String query = exchange.getRequest().getURI().getRawQuery();
         String target = route.uri() + path + (query == null ? "" : "?" + query);
 
@@ -65,6 +75,12 @@ public class ProxyWebFilter implements WebFilter {
                 .headers(headers -> copyRequestHeaders(exchange, headers))
                 .body(BodyInserters.fromDataBuffers(exchange.getRequest().getBody()))
                 .exchangeToMono(response -> {
+                    if (response.statusCode().is5xxServerError()) {
+                        circuitBreaker.onFailure(route.id());
+                    } else {
+                        circuitBreaker.onSuccess(route.id());
+                    }
+
                     exchange.getResponse().setStatusCode(response.statusCode());
 
                     response.headers().asHttpHeaders().forEach((name, values) -> {
@@ -77,7 +93,10 @@ public class ProxyWebFilter implements WebFilter {
                             response.bodyToFlux(DataBuffer.class)
                     );
                 })
-                .onErrorResume(error -> badGateway(exchange, route, error));
+                .onErrorResume(error -> {
+                    circuitBreaker.onFailure(route.id());
+                    return badGateway(exchange, route, error);
+                });
     }
 
     private static void copyRequestHeaders(
@@ -93,6 +112,24 @@ public class ProxyWebFilter implements WebFilter {
 
     private static boolean isHopByHop(String name) {
         return HOP_BY_HOP.contains(name.toLowerCase());
+    }
+
+    private static Mono<Void> serviceUnavailable(
+            ServerWebExchange exchange,
+            GatewayProperties.Route route) {
+
+        String message = "{\"code\":\"SERVICIO_NO_DISPONIBLE\","
+                + "\"message\":\"El servicio " + route.id()
+                + " está temporalmente no disponible\"}";
+
+        exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
+        exchange.getResponse().getHeaders().setContentType(
+                org.springframework.http.MediaType.APPLICATION_JSON);
+
+        DataBuffer buffer = exchange.getResponse().bufferFactory()
+                .wrap(message.getBytes(StandardCharsets.UTF_8));
+
+        return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 
     private static Mono<Void> badGateway(

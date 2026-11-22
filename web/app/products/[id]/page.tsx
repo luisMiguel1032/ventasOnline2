@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -68,10 +68,10 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!product) return;
 
-    document.title = `${product.name} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Ârbol de Venta`;
+    document.title = `${product.name} ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Ârbol de Venta`;
 
     return () => {
-      document.title = 'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Ârbol de Venta ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â tu tienda online';
+      document.title = 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Ârbol de Venta ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â tu tienda online';
     };
   }, [product]);
 
@@ -94,9 +94,9 @@ export default function ProductDetailPage() {
       <div className="empty-state">
         <p className="eyebrow">Producto no disponible</p>
         <h1>No encontramos este producto.</h1>
-        <p>{error ?? 'Puede que ya no exista o estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© inactivo.'}</p>
+        <p>{error ?? 'Puede que ya no exista o estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© inactivo.'}</p>
         <Link href="/" className="btn btn-primary">
-          Volver al catÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡logo
+          Volver al catÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡logo
         </Link>
       </div>
     );
@@ -126,13 +126,19 @@ export default function ProductDetailPage() {
   async function handleAddToCart() {
     if (!product) return;
     if (!session?.accessToken) {
-      setCartMessage('Inicia sesión para comprar.');
+      setCartMessage('Inicia sesiÃ³n para comprar.');
       return;
     }
     setAdding(true);
     setCartMessage(null);
     try {
-      await addCartItem(session.accessToken, product.id, 1);
+      const effectivePrice = product.dealPrice ?? product.price;
+      await addCartItem(session.accessToken, product.id, 1, {
+        productName: product.name,
+        productSlug: product.slug,
+        imageUrl: selectedImage ?? product.image ?? null,
+        unitPrice: effectivePrice,
+      });
       setCartMessage('Agregado al carrito.');
     } catch (err) {
       setCartMessage(err instanceof ApiError ? err.message : 'No se pudo agregar.');
@@ -143,10 +149,10 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      <nav className="breadcrumb" aria-label="Ruta de navegaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n">
+      <nav className="breadcrumb" aria-label="Ruta de navegaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n">
         <Link href="/">Inicio</Link>
         <span>/</span>
-        <span>{product.categoryName ?? 'CatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡logo'}</span>
+        <span>{product.categoryName ?? 'CatÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡logo'}</span>
         <span>/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
@@ -158,7 +164,7 @@ export default function ProductDetailPage() {
           </div>
 
           {gallery.length > 1 && (
-            <div className="thumbnails" aria-label="ImÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes del producto">
+            <div className="thumbnails" aria-label="ImÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡genes del producto">
               {gallery.map((image) => (
                 <button
                   type="button"
@@ -187,8 +193,8 @@ export default function ProductDetailPage() {
 
         <div className="detail-info">
           <p className="product-meta">
-            {product.categoryName ?? 'CatÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡logo'}
-            {product.brandName ? ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${product.brandName}` : ''}
+            {product.categoryName ?? 'CatÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡logo'}
+            {product.brandName ? ` ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${product.brandName}` : ''}
           </p>
 
           <h1>{product.name}</h1>
@@ -201,7 +207,7 @@ export default function ProductDetailPage() {
               {stars(product.ratingAvg)}
             </span>
             <span>{formatRating(product.ratingAvg)}</span>
-            <span className="rating-count">({product.ratingCount} reseÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±as)</span>
+            <span className="rating-count">({product.ratingCount} reseÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â±as)</span>
           </div>
 
           {hasDeal ? (
@@ -263,17 +269,17 @@ export default function ProductDetailPage() {
           >
             {stockLabel(effectiveStock)}
             {effectiveStock > 0
-              ? ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${formatStock(effectiveStock)} disponibles`
+              ? ` ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${formatStock(effectiveStock)} disponibles`
               : ''}
           </p>
 
           <p className="detail-description">
-            {product.description ?? 'Este producto todavÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a no tiene descripciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n.'}
+            {product.description ?? 'Este producto todavÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a no tiene descripciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n.'}
           </p>
 
           {features.length > 0 && (
             <section className="features">
-              <h2>CaracterÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­sticas</h2>
+              <h2>CaracterÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­sticas</h2>
               <ul>
                 {features.map((feature) => (
                   <li key={feature}>{feature}</li>
@@ -290,7 +296,7 @@ export default function ProductDetailPage() {
               disabled={adding || effectiveStock <= 0}
             >
               {adding
-                ? 'AgregandoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦'
+                ? 'AgregandoÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦'
                 : effectiveStock <= 0
                   ? 'Sin stock'
                   : hasDeal
@@ -304,12 +310,12 @@ export default function ProductDetailPage() {
           </div>
 
           <p className="hint">
-            El carrito y el checkout se habilitan en la siguiente fase.
+            Ya puedes agregar productos al carrito. La finalizaciÃ³n de compra se habilitarÃ¡ cuando el mÃ³dulo de pedidos estÃ© listo.
           </p>
 
           <dl className="specs">
             <div>
-              <dt>CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³digo</dt>
+              <dt>CÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³digo</dt>
               <dd>{product.code}</dd>
             </div>
             <div>
@@ -330,3 +336,4 @@ export default function ProductDetailPage() {
     </>
   );
 }
+

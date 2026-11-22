@@ -1,0 +1,15 @@
+# Ajustes de carga para order-service.
+# Activar con: --spring.profiles.active=scale
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    hikari:
+      maximum-pool-size: 12
+      minimum-idle: 4
+      connection-timeout: 3000
+      validation-timeout: 1000
+      idle-timeout: 600000
+      max-lifetime: 1800000

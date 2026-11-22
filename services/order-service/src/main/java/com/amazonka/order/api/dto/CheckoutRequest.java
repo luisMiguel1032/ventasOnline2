@@ -7,6 +7,13 @@ import jakarta.validation.constraints.NotEmpty;
 
 public record CheckoutRequest(
         @NotEmpty(message = "El pedido debe tener al menos un producto")
-        List<@Valid OrderItemRequest> items
+        List<@Valid OrderItemRequest> items,
+        String paymentMethod,
+        String shippingName,
+        String shippingPhone,
+        String shippingAddress,
+        String shippingCity,
+        String shippingNotes,
+        String notes
 ) {
 }

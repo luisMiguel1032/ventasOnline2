@@ -1,0 +1,18 @@
+# Ajustes de carga para el gateway (WebFlux/Netty, sin virtual threads).
+# Activar con: --spring.profiles.active=scale
+
+gateway:
+  http:
+    connect-timeout-ms: 3000
+    response-timeout-ms: 10000
+    read-timeout-ms: 10000
+    write-timeout-ms: 10000
+    max-connections: 300
+    pending-acquire-max-count: 800
+    pending-acquire-timeout-ms: 3000
+    circuit-breaker-enabled: true
+    circuit-failure-threshold: 5
+    circuit-cooldown-ms: 10000
+    rate-limit-enabled: true
+    rate-limit-max-requests: 300
+    rate-limit-window-seconds: 60

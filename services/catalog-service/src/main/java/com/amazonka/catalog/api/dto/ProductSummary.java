@@ -28,6 +28,10 @@ public record ProductSummary(
         BigDecimal dealStockRemaining,
         Integer dealStockPercent,
         BigDecimal dealStockLimit,
-        String videoUrl
+        String videoUrl,
+        String shortDescription,
+        BigDecimal compareAtPrice,
+        BigDecimal minStock,
+        Boolean showInShop
 ) {
 }

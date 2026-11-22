@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -42,9 +42,9 @@ export default function OrdersPage() {
   if (!session) {
     return (
       <div className="empty-state">
-        <h2>Inicia sesión para ver tus pedidos</h2>
+        <h2>Inicia sesiÃ³n para ver tus pedidos</h2>
         <Link href="/login" className="btn btn-primary">
-          Iniciar sesión
+          Iniciar sesiÃ³n
         </Link>
       </div>
     );
@@ -69,10 +69,10 @@ export default function OrdersPage() {
       )}
 
       {loading ? (
-        <div className="admin-card">Cargando pedidos…</div>
+        <div className="admin-card">Cargando pedidosâ€¦</div>
       ) : orders.length === 0 ? (
         <div className="empty-state">
-          <h2>No tienes pedidos todavía</h2>
+          <h2>No tienes pedidos todavÃ­a</h2>
           <p>Realiza tu primera compra desde el carrito.</p>
           <Link href="/cart" className="btn btn-primary">
             Ir al carrito
@@ -94,10 +94,10 @@ export default function OrdersPage() {
               {orders.map((order) => (
                 <tr key={order.id}>
                   <td>
-                    <strong>{order.id.slice(0, 8)}</strong>
+                    <strong>{order.orderNumber ?? order.id.slice(0, 8)}</strong>
                   </td>
                   <td>{formatDealDate(order.createdAt)}</td>
-                  <td>{order.status}</td>
+                  <td>{order.status}{order.paymentStatus ? ` / ${order.paymentStatus}` : ''}</td>
                   <td>{formatPrice(order.totalAmount)}</td>
                   <td>
                     <Link href={`/orders/${order.id}`} className="admin-link">
@@ -113,3 +113,4 @@ export default function OrdersPage() {
     </div>
   );
 }
+

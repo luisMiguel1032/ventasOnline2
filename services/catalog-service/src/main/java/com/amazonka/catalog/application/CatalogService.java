@@ -8,6 +8,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import com.amazonka.catalog.api.dto.DealSummary;
 import com.amazonka.catalog.api.dto.ProductDetail;
 import com.amazonka.catalog.api.dto.ProductRequest;
 import com.amazonka.catalog.api.dto.ProductSummary;
+import com.amazonka.catalog.config.CacheConfig;
 import com.amazonka.catalog.infrastructure.CatalogRepository;
 import com.amazonka.common.exception.ApiErrorCode;
 import com.amazonka.common.exception.ApiException;
@@ -39,6 +42,7 @@ public class CatalogService {
         this.repository = repository;
     }
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public PageResponse<ProductSummary> listProducts(
             UUID tenantId,
@@ -64,6 +68,7 @@ public class CatalogService {
         return PageResponse.of(content, safePage, safeSize, total);
     }
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public ProductDetail getProduct(UUID tenantId, UUID id) {
         return repository.findProduct(tenantId, id)
@@ -74,6 +79,7 @@ public class CatalogService {
                 ));
     }
 
+    @CacheEvict(cacheNames = CacheConfig.READS, allEntries = true)
     @Transactional
     public ProductDetail createProduct(UUID tenantId, ProductRequest request) {
         UUID id = UUID.randomUUID();
@@ -107,6 +113,7 @@ public class CatalogService {
                 ));
     }
 
+    @CacheEvict(cacheNames = CacheConfig.READS, allEntries = true)
     @Transactional
     public ProductDetail updateProduct(UUID tenantId, UUID id, ProductRequest request) {
         ProductDetail existing = getProduct(tenantId, id);
@@ -155,6 +162,7 @@ public class CatalogService {
                 ));
     }
 
+    @CacheEvict(cacheNames = CacheConfig.READS, allEntries = true)
     @Transactional
     public void deleteProduct(UUID tenantId, UUID id) {
         getProduct(tenantId, id);
@@ -215,11 +223,13 @@ public class CatalogService {
         return value != null && !value.isBlank();
     }
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public List<CategoryDto> listCategories(UUID tenantId) {
         return repository.findCategories(tenantId);
     }
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public List<BrandDto> listBrands(UUID tenantId) {
         return repository.findBrands(tenantId);
@@ -227,6 +237,7 @@ public class CatalogService {
 
     // --------------------------------------------------------------- Deals
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public PageResponse<DealSummary> listDeals(
             UUID tenantId,
@@ -254,6 +265,7 @@ public class CatalogService {
         return PageResponse.of(content, safePage, safeSize, total);
     }
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public PageResponse<DealSummary> listDealsForAdmin(
             UUID tenantId,
@@ -270,6 +282,7 @@ public class CatalogService {
         return PageResponse.of(content, safePage, safeSize, total);
     }
 
+    @Cacheable(cacheNames = CacheConfig.READS)
     @Transactional(readOnly = true)
     public DealSummary getDeal(UUID tenantId, UUID id) {
         return repository.findDeal(tenantId, id)
@@ -280,6 +293,7 @@ public class CatalogService {
                 ));
     }
 
+    @CacheEvict(cacheNames = CacheConfig.READS, allEntries = true)
     @Transactional
     public DealSummary createDeal(UUID tenantId, DealRequest request) {
         String dealType = normalizeDealType(request.dealType());
@@ -321,6 +335,7 @@ public class CatalogService {
         return getDeal(tenantId, id);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.READS, allEntries = true)
     @Transactional
     public DealSummary updateDeal(
             UUID tenantId,
@@ -379,6 +394,7 @@ public class CatalogService {
         return getDeal(tenantId, id);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.READS, allEntries = true)
     @Transactional
     public void deleteDeal(UUID tenantId, UUID id) {
         int updated = repository.softDeleteDeal(tenantId, id);

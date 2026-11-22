@@ -48,6 +48,20 @@ public record ProductRequest(
         String code,
 
         @Size(max = 50, message = "El itemCode es demasiado largo")
-        String itemCode
+        String itemCode,
+
+        @Size(max = 500, message = "La descripción corta es demasiado larga")
+        String shortDescription,
+        String principleActive,
+        @Size(max = 80, message = "El código de barras es demasiado largo")
+        String barcode,
+        @Size(max = 80, message = "El SKU es demasiado largo")
+        String sku,
+        BigDecimal costPrice,
+        BigDecimal compareAtPrice,
+        BigDecimal minStock,
+        Boolean soldByWeight,
+        Boolean showInShop,
+        Boolean trackInventory
 ) {
 }

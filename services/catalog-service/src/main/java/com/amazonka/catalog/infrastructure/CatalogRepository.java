@@ -37,7 +37,8 @@ public class CatalogRepository {
                    rating_avg, rating_count, category_name, brand_name,
                    deal_id, deal_price, deal_discount_percent, deal_type,
                    deal_title, deal_ends_at, deal_stock_remaining,
-                   deal_stock_percent, deal_stock_limit, video_url
+                   deal_stock_percent, deal_stock_limit, video_url,
+                   short_description, compare_at_price, min_stock, show_in_shop
             from v_shop_products
             """;
 
@@ -100,7 +101,11 @@ public class CatalogRepository {
                 rs.getBigDecimal("deal_stock_remaining"),
                 nullableInt(rs, "deal_stock_percent"),
                 rs.getBigDecimal("deal_stock_limit"),
-                rs.getString("video_url")
+                rs.getString("video_url"),
+                rs.getString("short_description"),
+                rs.getBigDecimal("compare_at_price"),
+                rs.getBigDecimal("min_stock"),
+                (Boolean) rs.getObject("show_in_shop")
         ));
     }
 
@@ -136,7 +141,10 @@ public class CatalogRepository {
                        categorie_id, category_name, brand_id, brand_name, unit_name,
                        deal_id, deal_price, deal_discount_percent, deal_type,
                        deal_title, deal_ends_at, deal_stock_remaining,
-                       deal_stock_percent, deal_stock_limit, video_url
+                       deal_stock_percent, deal_stock_limit, video_url,
+                       short_description, principle_active, barcode, sku,
+                       cost_price, compare_at_price, min_stock, sold_by_weight,
+                       show_in_shop, track_inventory
                 from v_shop_products
                 where tenant_id = :tenantId and id = :id
                 """, params, (rs, rowNum) -> new ProductDetail(
@@ -168,7 +176,17 @@ public class CatalogRepository {
                 rs.getBigDecimal("deal_stock_remaining"),
                 nullableInt(rs, "deal_stock_percent"),
                 rs.getBigDecimal("deal_stock_limit"),
-                rs.getString("video_url")
+                rs.getString("video_url"),
+                rs.getString("short_description"),
+                rs.getString("principle_active"),
+                rs.getString("barcode"),
+                rs.getString("sku"),
+                rs.getBigDecimal("cost_price"),
+                rs.getBigDecimal("compare_at_price"),
+                rs.getBigDecimal("min_stock"),
+                (Boolean) rs.getObject("sold_by_weight"),
+                (Boolean) rs.getObject("show_in_shop"),
+                (Boolean) rs.getObject("track_inventory")
         ));
 
         return results.stream().findFirst()
@@ -262,20 +280,32 @@ public class CatalogRepository {
                 .addValue("features", request.features())
                 .addValue("type", normalizeOrDefault(request.type(), "physical"))
                 .addValue("price", request.price())
-                .addValue("stock", request.stock() == null
-                        ? BigDecimal.ZERO
-                        : request.stock())
-                .addValue("unitName", normalizeOrDefault(request.unitName(), "unidad"));
+                .addValue("stock", request.stock() == null ? BigDecimal.ZERO : request.stock())
+                .addValue("unitName", normalizeOrDefault(request.unitName(), "unidad"))
+                .addValue("shortDescription", blankToNull(request.shortDescription()))
+                .addValue("principleActive", blankToNull(request.principleActive()))
+                .addValue("barcode", blankToNull(request.barcode()))
+                .addValue("sku", blankToNull(request.sku()))
+                .addValue("costPrice", request.costPrice())
+                .addValue("compareAtPrice", request.compareAtPrice())
+                .addValue("minStock", request.minStock() == null ? BigDecimal.ZERO : request.minStock())
+                .addValue("soldByWeight", request.soldByWeight() != null ? request.soldByWeight() : Boolean.FALSE)
+                .addValue("showInShop", request.showInShop() != null ? request.showInShop() : Boolean.TRUE)
+                .addValue("trackInventory", request.trackInventory() != null ? request.trackInventory() : Boolean.TRUE);
 
         jdbc.update("""
                 insert into products (
                     id, tenant_id, category_id, brand_id, code, item_code,
                     name, description, slug, image, video_url, features, type, price,
-                    stock, rating_avg, rating_count, unit_name, status
+                    stock, rating_avg, rating_count, unit_name, status,
+                    short_description, principle_active, barcode, sku,
+                    cost_price, compare_at_price, min_stock, sold_by_weight, show_in_shop, track_inventory
                 ) values (
                     :id, :tenantId, :categoryId, :brandId, :code, :itemCode,
                     :name, :description, :slug, :image, :videoUrl, :features, :type,
-                    :price, :stock, 0, 0, :unitName, 1
+                    :price, :stock, 0, 0, :unitName, 1,
+                    :shortDescription, :principleActive, :barcode, :sku,
+                    :costPrice, :compareAtPrice, :minStock, :soldByWeight, :showInShop, :trackInventory
                 )
                 """, params);
     }
@@ -317,14 +347,20 @@ public class CatalogRepository {
                 .addValue("image", request.image())
                 .addValue("videoUrl", request.videoUrl())
                 .addValue("features", request.features())
-                .addValue("type", request.type() == null || request.type().isBlank()
-                        ? null
-                        : request.type().trim())
+                .addValue("type", request.type() == null || request.type().isBlank() ? null : request.type().trim())
                 .addValue("price", request.price())
                 .addValue("stock", request.stock())
-                .addValue("unitName", request.unitName() == null || request.unitName().isBlank()
-                        ? null
-                        : request.unitName().trim());
+                .addValue("unitName", request.unitName() == null || request.unitName().isBlank() ? null : request.unitName().trim())
+                .addValue("shortDescription", blankToNull(request.shortDescription()))
+                .addValue("principleActive", blankToNull(request.principleActive()))
+                .addValue("barcode", blankToNull(request.barcode()))
+                .addValue("sku", blankToNull(request.sku()))
+                .addValue("costPrice", request.costPrice())
+                .addValue("compareAtPrice", request.compareAtPrice())
+                .addValue("minStock", request.minStock())
+                .addValue("soldByWeight", request.soldByWeight())
+                .addValue("showInShop", request.showInShop())
+                .addValue("trackInventory", request.trackInventory());
 
         return jdbc.update("""
                 update products set
@@ -342,6 +378,16 @@ public class CatalogRepository {
                     price = :price,
                     stock = coalesce(:stock, stock),
                     unit_name = coalesce(:unitName, unit_name),
+                    short_description = coalesce(:shortDescription, short_description),
+                    principle_active = coalesce(:principleActive, principle_active),
+                    barcode = coalesce(:barcode, barcode),
+                    sku = coalesce(:sku, sku),
+                    cost_price = coalesce(:costPrice, cost_price),
+                    compare_at_price = coalesce(:compareAtPrice, compare_at_price),
+                    min_stock = coalesce(:minStock, min_stock),
+                    sold_by_weight = coalesce(:soldByWeight, sold_by_weight),
+                    show_in_shop = coalesce(:showInShop, show_in_shop),
+                    track_inventory = coalesce(:trackInventory, track_inventory),
                     updated_at = now()
                 where tenant_id = :tenantId and id = :id and status = 1
                 """, params);
@@ -623,6 +669,13 @@ public class CatalogRepository {
                 : value.trim();
     }
 
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
     private ProductDetail withImages(ProductDetail product, UUID tenantId) {
         List<String> images = findImages(tenantId, product.id());
 
@@ -655,7 +708,17 @@ public class CatalogRepository {
                 product.dealStockRemaining(),
                 product.dealStockPercent(),
                 product.dealStockLimit(),
-                product.videoUrl()
+                product.videoUrl(),
+                product.shortDescription(),
+                product.principleActive(),
+                product.barcode(),
+                product.sku(),
+                product.costPrice(),
+                product.compareAtPrice(),
+                product.minStock(),
+                product.soldByWeight(),
+                product.showInShop(),
+                product.trackInventory()
         );
     }
 

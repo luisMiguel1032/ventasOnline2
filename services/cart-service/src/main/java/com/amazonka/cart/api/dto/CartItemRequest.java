@@ -12,6 +12,11 @@ public record CartItemRequest(
 
         @NotNull(message = "La cantidad es obligatoria")
         @DecimalMin(value = "0.0001", message = "La cantidad debe ser mayor a cero")
-        BigDecimal quantity
+        BigDecimal quantity,
+
+        String productName,
+        String productSlug,
+        String imageUrl,
+        BigDecimal unitPrice
 ) {
 }

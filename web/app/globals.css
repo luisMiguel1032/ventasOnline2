@@ -1864,3 +1864,142 @@ img {
   border-radius: var(--radius);
   background: #000000;
 }
+
+/* Campo de imagen del panel (Subir / URL), inspirado en el CRM de clientes. */
+.image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.image-field-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+
+.image-field-tab {
+  padding: 5px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.image-field-tab.is-active {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+.image-dropzone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 176px;
+  padding: 16px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.image-dropzone:hover,
+.image-dropzone.is-dragover {
+  border-color: var(--accent-strong);
+  background: #fffaf1;
+}
+
+.image-field-file {
+  display: none;
+}
+
+.image-dropzone-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.image-dropzone-placeholder strong {
+  color: var(--ink);
+}
+
+.image-dropzone-placeholder span:last-child {
+  font-size: 0.78rem;
+}
+
+.image-dropzone-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--brand);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.image-dropzone-preview {
+  max-height: 150px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.image-url-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.image-url-field input {
+  flex: 1 1 260px;
+}
+
+.image-url-preview {
+  width: 62px;
+  height: 62px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.image-field-clear {
+  padding: 5px 10px;
+  border: 1px solid #efc6bb;
+  border-radius: 8px;
+  background: #fff7f4;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.image-field-clear:hover {
+  border-color: var(--danger);
+}
+
+.image-dropzone .image-field-clear {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.image-field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.82rem;
+}

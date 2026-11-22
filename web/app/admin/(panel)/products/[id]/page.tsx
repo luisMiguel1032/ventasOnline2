@@ -5,13 +5,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { useAuth } from '@/components/AuthProvider';
+import { ImageField } from '@/components/ImageField';
 import {
   ApiError,
+  absoluteUploadUrl,
   deleteProduct,
   getBrands,
   getCategories,
   getProduct,
   updateProduct,
+  uploadImage,
 } from '@/lib/api';
 import type { Brand, Category, ProductDetail, ProductInput } from '@/lib/types';
 
@@ -36,6 +39,7 @@ export default function AdminEditProductPage() {
   const [categoryId, setCategoryId] = useState('');
   const [brandId, setBrandId] = useState('');
   const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [features, setFeatures] = useState('');
   const [type, setType] = useState('physical');
@@ -64,6 +68,7 @@ export default function AdminEditProductPage() {
         setCategoryId(prod.categoryId ?? '');
         setBrandId(prod.brandId ?? '');
         setImage(prod.image ?? '');
+        setImageFile(null);
         setVideoUrl(prod.videoUrl ?? '');
         setFeatures(prod.features ?? '');
         setType(prod.type ?? 'physical');
@@ -105,24 +110,30 @@ export default function AdminEditProductPage() {
       return;
     }
 
-    const input: ProductInput = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      price: priceNum,
-      stock: stockNum,
-      categoryId: categoryId || undefined,
-      brandId: brandId || undefined,
-      image: image.trim() || undefined,
-      videoUrl: videoUrl.trim() || undefined,
-      features: features.trim() || undefined,
-      type: type.trim() || undefined,
-      unitName: unitName.trim() || undefined,
-      code: code.trim() || undefined,
-      itemCode: itemCode.trim() || undefined,
-    };
-
     setSubmitting(true);
     try {
+      let imageValue = image.trim() || undefined;
+      if (imageFile) {
+        const uploaded = await uploadImage(session.accessToken, imageFile);
+        imageValue = absoluteUploadUrl(uploaded.url);
+      }
+
+      const input: ProductInput = {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        price: priceNum,
+        stock: stockNum,
+        categoryId: categoryId || undefined,
+        brandId: brandId || undefined,
+        image: imageValue,
+        videoUrl: videoUrl.trim() || undefined,
+        features: features.trim() || undefined,
+        type: type.trim() || undefined,
+        unitName: unitName.trim() || undefined,
+        code: code.trim() || undefined,
+        itemCode: itemCode.trim() || undefined,
+      };
+
       await updateProduct(session.accessToken, id, input);
       router.push('/admin/products');
     } catch (err) {
@@ -284,15 +295,18 @@ export default function AdminEditProductPage() {
               </label>
             </div>
 
-            <label className="field">
-              <span>URL de imagen</span>
-              <input
-                type="url"
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                maxLength={500}
-              />
-            </label>
+            <ImageField
+              value={image}
+              onChange={(next) => {
+                if (next instanceof File) {
+                  setImageFile(next);
+                  setImage('');
+                } else {
+                  setImageFile(null);
+                  setImage(next);
+                }
+              }}
+            />
 
             <label className="field">
               <span>URL de video</span>
